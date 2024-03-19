@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
-	n.Http()
+	// n.Http()
+	n.Rpc()
 	fmt.Println("Hello, world!")
 }
