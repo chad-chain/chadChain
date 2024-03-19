@@ -38,7 +38,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	case 3:
 		response = getBlock(request)
 	case 4:
-		response = block(request)
+		response = getblockdetails(request)
 	default:
 		response = "Invalid action ID."
 	}
@@ -63,7 +63,7 @@ func getBlock(request ActionRequest) ActionResponse {
 	return "Block requested."
 }
 
-func block(request ActionRequest) ActionResponse {
+func getblockdetails(request ActionRequest) ActionResponse {
 	return "Block requested."
 }
 
