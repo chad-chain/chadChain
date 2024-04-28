@@ -39,6 +39,7 @@ func setupHost() (host.Host, error) {
 }
 
 func connectToPeer(addr string) error {
+
 	peerMA, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
 		return err
