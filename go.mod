@@ -2,6 +2,8 @@ module github.com/malay44/chadChain
 
 go 1.21.6
 
+require golang.org/x/crypto v0.22.0
+
 require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
@@ -18,7 +20,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opencensus.io v0.22.5 // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
