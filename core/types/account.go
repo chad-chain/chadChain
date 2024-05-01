@@ -39,7 +39,7 @@ func (ac *Account) AddAccount() (string, string, error) {
 	if err != nil {
 		panic(err)
 	}
-	hash := NewKeccak256().Hash(val)
+	hash := Keccak256(val)
 
 	// save account info and its hash to db
 	err = storage.BadgerDB.Update(func(tx *badger.Txn) error {
