@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/malay44/chadChain/core/storage"
+	s "github.com/malay44/chadChain/core/storage"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -15,7 +15,7 @@ type Account struct {
 }
 
 // State root hash
-var StateRootHash [32]byte
+var StateRootHash []byte
 
 func (ac *Account) CreateAccount(address [32]byte, nonce uint64, balance uint64) Account {
 	return Account{address, nonce, balance}
@@ -32,17 +32,38 @@ func (ac *Account) AddAccount() (string, string, error) {
 	// marshal account info to byte array and hash it
 	val, err := msgpack.Marshal(ac)
 	if err != nil {
-		panic(err)
+		return "", "", err
 	}
 	hash := Keccak256(val)
+	marshaledHash, err := msgpack.Marshal(hash)
+	if err != nil {
+		return "", "", err
+	}
 
 	// save account info and its hash to db
-	err = storage.BadgerDB.Update(func(tx *badger.Txn) error {
-		err := storage.Insert([]byte(accKey), ac)(tx)
+	err = s.BadgerDB.Update(func(tx *badger.Txn) error {
+		err := s.Insert([]byte(accKey), ac)(tx)
 		if err != nil {
 			return err
 		}
-		err = storage.Insert([]byte(hashKey), hash)(tx)
+		err = s.Insert([]byte(hashKey), marshaledHash)(tx)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	StateRootHash, err = ComputeRootHash()
+	if err != nil {
+		return "", "", err
+	}
+
+	// save state root hash to db
+	err = s.BadgerDB.Update(func(tx *badger.Txn) error {
+		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
 		if err != nil {
 			return err
 		}
@@ -51,12 +72,12 @@ func (ac *Account) AddAccount() (string, string, error) {
 
 	// check for errors
 	if err != nil {
-		log.Default().Println(err.Error())
 		return "", "", err
-	} else {
-		log.Default().Println("Account saved to db with key", accKey, "and hash key", hashKey)
-		return accKey, hashKey, nil
 	}
+
+	// log.Default().Println("Account saved to db with \nkey", accKey, "\nhash key", hashKey, "\nstate root hash", StateRootHash)
+	log.Default().Printf("Account saved to db with \nkey %s \nhash key %s \nstate root hash %x\n", accKey, hashKey, StateRootHash)
+	return accKey, hashKey, nil
 }
 
 // Get account from db
@@ -64,8 +85,8 @@ func GetAccount(address string) (Account, error) {
 	// create keys for account and its hash
 	accKey := "account"
 	acc := Account{}
-	err := storage.BadgerDB.View(func(tx *badger.Txn) error {
-		err := storage.Get([]byte(accKey+address), &acc)(tx)
+	err := s.BadgerDB.View(func(tx *badger.Txn) error {
+		err := s.Get([]byte(accKey+address), &acc)(tx)
 		return err
 	})
 
@@ -74,6 +95,34 @@ func GetAccount(address string) (Account, error) {
 	}
 
 	return acc, nil
+}
+
+// Compute the root hash
+func ComputeRootHash() ([]byte, error) {
+	prefix := "hash"
+	var hashes [][]byte
+	var accHash []byte
+
+	err := s.BadgerDB.View(s.Traverse([]byte(prefix), func() (s.CheckFunc, s.CreateFunc, s.HandleFunc) {
+		checkFunc := func(_ []byte) bool {
+			return true
+		}
+		createFunc := func() interface{} {
+			return &accHash
+		}
+		handleFunc := func() error {
+			hashes = append(hashes, accHash)
+			return nil
+		}
+		return checkFunc, createFunc, handleFunc
+	}))
+
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return Keccak256(hashes...), nil
+
 }
 
 // send account over network

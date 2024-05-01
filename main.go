@@ -10,8 +10,11 @@ import (
 
 func main() {
 	// n.Http()
+	// Initializations
 	db.InitBadger()
+	initGlobalVar()
 	defer db.BadgerDB.Close()
+
 	// n.Rpc()
 	bbc := t.Block{}
 	bbch := t.Header{}
@@ -25,11 +28,14 @@ func main() {
 	// Test Account creation
 	acc := t.Account{}
 	accAddr := [32]byte{}
-	copy(accAddr[:], "0x123456789012345678901234567890")
+	copy(accAddr[:], "0x123456789012845638901254566799")
 	accNonce := uint64(0)
 	accBalance := uint64(0)
 	acc = acc.CreateAccount(accAddr, accNonce, accBalance)
-	acc.AddAccount()
+	_, _, err := acc.AddAccount()
+	if err != nil {
+		log.Default().Println(err.Error())
+	}
 
 	// Test Account retrieval
 	// accAddr := "0x1234567890123456789012345678901234567890"
@@ -40,6 +46,16 @@ func main() {
 	// log.Default().Println(acc)
 
 	log.Default().Println("Hello, world!")
+}
+
+func initGlobalVar() {
+	err := db.BadgerDB.View(db.Get([]byte("stateRootHash"), &t.StateRootHash))
+	if err != nil {
+		log.Default().Printf("StateRootHash not found\n")
+		log.Default().Println(err.Error())
+		return
+	}
+	log.Default().Printf("StateRootHash: %x\n", t.StateRootHash)
 }
 
 // func testDBFunc(block t.Block) {
