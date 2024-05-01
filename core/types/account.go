@@ -15,6 +15,11 @@ type Account struct {
 	Balance uint64 // The balance of the account
 }
 
+// State root hash
+type StateRoot struct {
+	Root string
+}
+
 func (ac *Account) CreateAccount(address string, nonce uint64, balance uint64) Account {
 	return Account{address, nonce, balance}
 }
@@ -31,7 +36,7 @@ func (ac *Account) AddAccount() (string, string, error) {
 		hashKey = hashKey + ac.Address
 	} else {
 		log.Default().Println("Address is empty")
-		return "", "", errors.New("Address is empty")
+		return "", "", errors.New("address is empty")
 	}
 
 	// marshal account info to byte array and hash it
@@ -62,6 +67,23 @@ func (ac *Account) AddAccount() (string, string, error) {
 		log.Default().Println("Account saved to db with key", accKey, "and hash key", hashKey)
 		return accKey, hashKey, nil
 	}
+}
+
+// Get account from db
+func GetAccount(address string) (Account, error) {
+	// create keys for account and its hash
+	accKey := "account"
+	acc := Account{}
+	err := storage.BadgerDB.View(func(tx *badger.Txn) error {
+		err := storage.Get([]byte(accKey+address), &acc)(tx)
+		return err
+	})
+
+	if err != nil {
+		return acc, err
+	}
+
+	return acc, nil
 }
 
 // send account over network

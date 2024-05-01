@@ -30,6 +30,14 @@ func main() {
 	acc = acc.CreateAccount(accAddr, accNonce, accBalance)
 	acc.AddAccount()
 
+	// Test Account retrieval
+	// accAddr := "0x1234567890123456789012345678901234567890"
+	// acc, err := t.GetAccount(accAddr)
+	// if err != nil {
+	// 	log.Default().Println(err.Error())
+	// }
+	// log.Default().Println(acc)
+
 	log.Default().Println("Hello, world!")
 }
 
