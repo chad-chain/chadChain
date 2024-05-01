@@ -1,20 +1,22 @@
 package main
 
 import (
-	// "context"
+	"context"
 	"log"
 
-	// n "github.com/malay44/chadChain/core/network"
+	n "github.com/malay44/chadChain/core/network"
 	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
 	// n.Http()
-	// ctx := context.Background()
-	// n.Run(ctx, []string{
-	// 	"/ip4/127.0.0.1/tcp/51620/p2p/12D3KooWBNAmJ2dr9cnmv6e814QPZvdSbWstEyqSV8fzgzNBymYu",
-	// })
+	n.PeerAddrs = []string{
+		// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
+	}
+
+	n.CtxVar = context.Background()
+	n.Run()
 	db.InitBadger()
 	defer db.BadgerDB.Close()
 	initGlobalVar()
