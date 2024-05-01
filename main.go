@@ -24,7 +24,8 @@ func main() {
 
 	// Test Account creation
 	acc := t.Account{}
-	accAddr := "0x1234567890123456789012345678901234567890"
+	accAddr := [32]byte{}
+	copy(accAddr[:], "0x123456789012345678901234567890")
 	accNonce := uint64(0)
 	accBalance := uint64(0)
 	acc = acc.CreateAccount(accAddr, accNonce, accBalance)

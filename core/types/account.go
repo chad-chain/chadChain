@@ -1,7 +1,6 @@
 package types
 
 import (
-	"errors"
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
@@ -10,17 +9,15 @@ import (
 )
 
 type Account struct {
-	Address string // The address of the account
-	Nonce   uint64 // The nonce of the account
-	Balance uint64 // The balance of the account
+	Address [32]byte // The address of the account
+	Nonce   uint64   // The nonce of the account
+	Balance uint64   // The balance of the account
 }
 
 // State root hash
-type StateRoot struct {
-	Root string
-}
+var StateRootHash [32]byte
 
-func (ac *Account) CreateAccount(address string, nonce uint64, balance uint64) Account {
+func (ac *Account) CreateAccount(address [32]byte, nonce uint64, balance uint64) Account {
 	return Account{address, nonce, balance}
 }
 
@@ -28,16 +25,9 @@ func (ac *Account) CreateAccount(address string, nonce uint64, balance uint64) A
 func (ac *Account) AddAccount() (string, string, error) {
 
 	// create keys for account and its hash
-	accKey := "account"
-	hashKey := "hash"
-
-	if len(ac.Address) > 0 {
-		accKey = accKey + ac.Address
-		hashKey = hashKey + ac.Address
-	} else {
-		log.Default().Println("Address is empty")
-		return "", "", errors.New("address is empty")
-	}
+	addrSlice := ac.Address[:]
+	accKey := "account" + string(addrSlice)
+	hashKey := "hash" + string(addrSlice)
 
 	// marshal account info to byte array and hash it
 	val, err := msgpack.Marshal(ac)
