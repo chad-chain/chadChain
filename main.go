@@ -1,60 +1,50 @@
 package main
 
 import (
-	"log"
+	"context"
+	// "log"
 
-	// n "github.com/malay44/chadChain/core/network"
-	db "github.com/malay44/chadChain/core/storage"
-	t "github.com/malay44/chadChain/core/types"
+	n "github.com/malay44/chadChain/core/network"
+	// db "github.com/malay44/chadChain/core/storage"
+	// t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
 	// n.Http()
-	db.InitBadger()
-	defer db.BadgerDB.Close()
-	// n.Rpc()
-	bbc := t.Block{}
-	bbch := t.Header{}
-	bbct := t.Transaction{}
-	bbch.CreateHeader([32]byte{}, [20]byte{}, [32]byte{}, [32]byte{}, 0, 0, 0, 0, []byte{}, 0)
-	bbct.CreateTransaction([20]byte{}, 0, 0, nil, nil, nil)
+	ctx := context.Background()
+	n.Run(ctx, []string{
+		"/ip4/127.0.0.1/tcp/61062/p2p/12D3KooWBFe8MmXXtghkiXp94kxt87Egta2v4Uqov8yvjKBAVKEe",
+	})
+	// db.InitBadger()
+	// defer db.BadgerDB.Close()
 
-	bbc.CreateBlock(bbch, []t.Transaction{bbct})
-	// testDBFunc(bbc)
+	// bbc := t.Block{}
+	// bbch := t.Header{}
+	// bbct := t.Transaction{}
+	// bbca := t.Account{}
+	// bbch.CreateHeader([32]byte{}, [20]byte{}, [32]byte{}, [32]byte{}, 0, 0, 0, 0, []byte{}, 0)
+	// bbct.CreateTransaction([20]byte{}, 0, 0, nil, nil, nil)
+	// bbca.CreateAccount([20]byte{}, 0, 0)
 
-	// Test Account creation
-	acc := t.Account{}
-	accAddr := [32]byte{}
-	copy(accAddr[:], "0x123456789012345678901234567890")
-	accNonce := uint64(0)
-	accBalance := uint64(0)
-	acc = acc.CreateAccount(accAddr, accNonce, accBalance)
-	acc.AddAccount()
+	// bbc.CreateBlock(bbch, []t.Transaction{bbct})
+	// // log.Default().Println("Block created")
+	// // log.Default().Println(bbc)
 
-	// Test Account retrieval
-	// accAddr := "0x1234567890123456789012345678901234567890"
-	// acc, err := t.GetAccount(accAddr)
+	// err := db.BadgerDB.Update(db.Insert([]byte("block"), bbc))
 	// if err != nil {
-	// 	log.Default().Println(err.Error())
+	// 	println("Update Error", err.Error())
+	// 	log.Fatal(err)
 	// }
-	// log.Default().Println(acc)
 
-	log.Default().Println("Hello, world!")
+	// retrievedBlock := t.Block{}
+	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
+	// if err != nil {
+	// 	println("View Error", err.Error())
+	// 	log.Fatal(err)
+	// }
+	// log.Default().Println("Block retrieved")
+	// log.Default().Println(retrievedBlock)
+
+	// log.Default().Println("Hello, world!")
+
 }
-
-// func testDBFunc(block t.Block) {
-// 	err := db.BadgerDB.Update(db.Insert([]byte("block"), block))
-// 	if err != nil {
-// 		println("Update Error", err.Error())
-// 		log.Fatal(err)
-// 	}
-
-// 	retrievedBlock := t.Block{}
-// 	err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
-// 	if err != nil {
-// 		println("View Error", err.Error())
-// 		log.Fatal(err)
-// 	}
-// 	log.Default().Println("Block retrieved")
-// 	log.Default().Println(retrievedBlock)
-// }
