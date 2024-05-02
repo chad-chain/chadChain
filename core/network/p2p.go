@@ -109,7 +109,7 @@ func streamHandler(s network.Stream) {
 		fmt.Println("Sent Hello message to", s.Conn().RemoteMultiaddr().String())
 
 	case 1:
-		recieveTransaction(msg.Data.(t.Transaction))
+		recieveTransaction(msg.Data)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -125,14 +125,14 @@ func streamHandler(s network.Stream) {
 	}
 }
 
-func recieveTransaction(tr t.Transaction) {
+func recieveTransaction(tr any) {
 	fmt.Println("Received transaction:", tr)
-	tr.AddTransaction(tr)
 }
 
-// func sendTransaction(tr t.Transaction) {
-
-// }
+func SendTransaction(tr t.Transaction) {
+	sendToAllPeers(message{ID: 1, Code: 1, Want: 1, Data: tr})
+	fmt.Println("Sent transaction:", tr)
+}
 
 type message struct {
 	ID   uint64      `json:"id"`
@@ -150,7 +150,8 @@ func Run() {
 	defer hostVar.Close()
 
 	fmt.Println("Addresses:", hostVar.Addrs())
-	fmt.Println("ID:", hostVar.ID())
+	// fmt.Println("ID:", hostVar.ID())
+	fmt.Println("Concnated Addr:", hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String())
 	// fmt.Println("Peer_ADDR:", os.Getenv("PEER_ADDR"))
 
 	for _, addr := range PeerAddrs {
@@ -161,7 +162,6 @@ func Run() {
 		fmt.Println("Connected to peer:", addr)
 	}
 	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: "Hello"})
-
 	hostVar.SetStreamHandler("/", streamHandler)
 
 	sigCh := make(chan os.Signal)
