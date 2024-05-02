@@ -13,7 +13,14 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	t "github.com/malay44/chadChain/core/types"
 	"github.com/multiformats/go-multiaddr"
+)
+
+var (
+	hostVar   host.Host
+	CtxVar    context.Context
+	PeerAddrs []string
 )
 
 func setupHost() (host.Host, error) {
@@ -31,7 +38,7 @@ func setupHost() (host.Host, error) {
 	return host, nil
 }
 
-func connectToPeer(ctx context.Context, host host.Host, addr string) error {
+func connectToPeer(addr string) error {
 	peerMA, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
 		return err
@@ -42,12 +49,36 @@ func connectToPeer(ctx context.Context, host host.Host, addr string) error {
 		return err
 	}
 
-	if err := host.Connect(ctx, *peerAddrInfo); err != nil {
+	if err := hostVar.Connect(CtxVar, *peerAddrInfo); err != nil {
 		return err
 	}
 
 	fmt.Println("Connected to", peerAddrInfo.String())
 	return nil
+}
+
+func sendToAllPeers(msg message) {
+	for _, p := range PeerAddrs {
+		peerMA, err := multiaddr.NewMultiaddr(p)
+		if err != nil {
+			fmt.Println("Error creating multiaddr:", err)
+			continue
+		}
+
+		peerAddrInfo, err := peer.AddrInfoFromP2pAddr(peerMA)
+		if err != nil {
+			fmt.Println("Error creating peer.AddrInfo:", err)
+			continue
+		}
+
+		s, err := hostVar.NewStream(CtxVar, peerAddrInfo.ID, "/")
+		if err != nil {
+			fmt.Println("Error creating stream:", err)
+			continue
+		}
+
+		send(s, msg)
+	}
 }
 
 func send(s network.Stream, msg message) {
@@ -78,7 +109,7 @@ func streamHandler(s network.Stream) {
 		fmt.Println("Sent Hello message to", s.Conn().RemoteMultiaddr().String())
 
 	case 1:
-		fmt.Println("Received transaction. Response: List of encoded transactions (can be 1 or more).")
+		recieveTransaction(msg.Data.(t.Transaction))
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -94,17 +125,14 @@ func streamHandler(s network.Stream) {
 	}
 }
 
-func sendInitialHelloMessage(ctx context.Context, host host.Host, peerAddrInfo peer.AddrInfo, peerMA multiaddr.Multiaddr) error {
-	s, err := host.NewStream(ctx, peerAddrInfo.ID, "/")
-	if err != nil {
-		return err
-	}
-	defer s.Close()
-
-	send(s, message{ID: 0, Code: 0, Want: 0, Data: "Hello"})
-	fmt.Println("Sent Hello message to", peerMA.String())
-	return nil
+func recieveTransaction(tr t.Transaction) {
+	fmt.Println("Received transaction:", tr)
+	tr.AddTransaction(tr)
 }
+
+// func sendTransaction(tr t.Transaction) {
+
+// }
 
 type message struct {
 	ID   uint64      `json:"id"`
@@ -113,48 +141,28 @@ type message struct {
 	Data interface{} `json:"data"`
 }
 
-func Run(ctx context.Context, peerAddrs []string) {
-	host, err := setupHost()
+func Run() {
+	var err error
+	hostVar, err = setupHost()
 	if err != nil {
 		panic(err)
 	}
-	defer host.Close()
+	defer hostVar.Close()
 
-	fmt.Println("Addresses:", host.Addrs())
-	fmt.Println("ID:", host.ID())
+	fmt.Println("Addresses:", hostVar.Addrs())
+	fmt.Println("ID:", hostVar.ID())
 	// fmt.Println("Peer_ADDR:", os.Getenv("PEER_ADDR"))
 
-	for _, addr := range peerAddrs {
-		if err := connectToPeer(ctx, host, addr); err != nil {
+	for _, addr := range PeerAddrs {
+		if err := connectToPeer(addr); err != nil {
 			fmt.Println("Error connecting to peer:", err)
 			continue
 		}
+		fmt.Println("Connected to peer:", addr)
 	}
+	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: "Hello"})
 
-	host.SetStreamHandler("/", streamHandler)
-
-	// Send initial Hello message to each peer
-	for _, addr := range peerAddrs {
-		peerMA, err := multiaddr.NewMultiaddr(addr)
-		if err != nil {
-			fmt.Println("Error parsing peer address:", err)
-			continue
-		}
-		fmt.Println("peerMA:", peerMA)
-
-		peerAddrInfo, err := peer.AddrInfoFromP2pAddr(peerMA)
-		if err != nil {
-			fmt.Println("Error creating peer address info:", err)
-			continue
-		}
-
-		fmt.Println("peerAddrInfo:", peerAddrInfo)
-
-		if err := sendInitialHelloMessage(ctx, host, *peerAddrInfo, peerMA); err != nil {
-			fmt.Println("Error sending initial Hello message to peer:", err)
-			continue
-		}
-	}
+	hostVar.SetStreamHandler("/", streamHandler)
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)
