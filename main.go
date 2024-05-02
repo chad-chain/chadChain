@@ -1,22 +1,23 @@
 package main
 
 import (
-	"context"
-	// "log"
+	// "context"
+	"log"
 
-	n "github.com/malay44/chadChain/core/network"
-	// db "github.com/malay44/chadChain/core/storage"
-	// t "github.com/malay44/chadChain/core/types"
+	// n "github.com/malay44/chadChain/core/network"
+	db "github.com/malay44/chadChain/core/storage"
+	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
 	// n.Http()
-	ctx := context.Background()
-	n.Run(ctx, []string{
-		"/ip4/127.0.0.1/tcp/51620/p2p/12D3KooWBNAmJ2dr9cnmv6e814QPZvdSbWstEyqSV8fzgzNBymYu",
-	})
-	// db.InitBadger()
-	// defer db.BadgerDB.Close()
+	// ctx := context.Background()
+	// n.Run(ctx, []string{
+	// 	"/ip4/127.0.0.1/tcp/51620/p2p/12D3KooWBNAmJ2dr9cnmv6e814QPZvdSbWstEyqSV8fzgzNBymYu",
+	// })
+	db.InitBadger()
+	defer db.BadgerDB.Close()
+	initGlobalVar()
 
 	// bbc := t.Block{}
 	// bbch := t.Header{}
@@ -38,10 +39,6 @@ func main() {
 
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
-	// if err != nil {
-	// 	log.Default().Println(err.Error())
-	// }
-	// log.Default().Println(acc)
 
 	log.Default().Println("Hello, world!")
 }
