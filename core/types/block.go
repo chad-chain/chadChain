@@ -31,7 +31,10 @@ func (b *Block) AddBlockToChain(blck Block) {
 
 // create block
 func (b *Block) CreateBlock(header Header, transactions []Transaction) Block {
-	return Block{header, transactions}
+	block := new(Block)
+	block.Header = header
+	block.Transactions = transactions
+	return *block
 }
 
 func (b *Block) CalculateHash() [32]byte {
