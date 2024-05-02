@@ -1,22 +1,23 @@
 package main
 
 import (
-	"context"
-	// "log"
+	// "context"
+	"log"
 
-	n "github.com/malay44/chadChain/core/network"
-	// db "github.com/malay44/chadChain/core/storage"
-	// t "github.com/malay44/chadChain/core/types"
+	// n "github.com/malay44/chadChain/core/network"
+	db "github.com/malay44/chadChain/core/storage"
+	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
 	// n.Http()
-	ctx := context.Background()
-	n.Run(ctx, []string{
-		"/ip4/127.0.0.1/tcp/51620/p2p/12D3KooWBNAmJ2dr9cnmv6e814QPZvdSbWstEyqSV8fzgzNBymYu",
-	})
-	// db.InitBadger()
-	// defer db.BadgerDB.Close()
+	// ctx := context.Background()
+	// n.Run(ctx, []string{
+	// 	"/ip4/127.0.0.1/tcp/51620/p2p/12D3KooWBNAmJ2dr9cnmv6e814QPZvdSbWstEyqSV8fzgzNBymYu",
+	// })
+	db.InitBadger()
+	defer db.BadgerDB.Close()
+	initGlobalVar()
 
 	// bbc := t.Block{}
 	// bbch := t.Header{}
@@ -38,13 +39,33 @@ func main() {
 
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
-	// if err != nil {
-	// 	println("View Error", err.Error())
-	// 	log.Fatal(err)
-	// }
-	// log.Default().Println("Block retrieved")
-	// log.Default().Println(retrievedBlock)
 
-	// log.Default().Println("Hello, world!")
-
+	log.Default().Println("Hello, world!")
 }
+
+func initGlobalVar() {
+	err := db.BadgerDB.View(db.Get([]byte("stateRootHash"), &t.StateRootHash))
+	if err != nil {
+		log.Default().Printf("StateRootHash not found\n")
+		log.Default().Println(err.Error())
+		return
+	}
+	log.Default().Printf("StateRootHash: %x\n", t.StateRootHash)
+}
+
+// func testDBFunc(block t.Block) {
+// 	err := db.BadgerDB.Update(db.Insert([]byte("block"), block))
+// 	if err != nil {
+// 		println("Update Error", err.Error())
+// 		log.Fatal(err)
+// 	}
+
+// 	retrievedBlock := t.Block{}
+// 	err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
+// 	if err != nil {
+// 		println("View Error", err.Error())
+// 		log.Fatal(err)
+// 	}
+// 	log.Default().Println("Block retrieved")
+// 	log.Default().Println(retrievedBlock)
+// }
