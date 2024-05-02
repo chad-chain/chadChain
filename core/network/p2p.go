@@ -18,6 +18,7 @@ import (
 
 func setupHost() (host.Host, error) {
 	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
+
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +50,7 @@ func connectToPeer(ctx context.Context, host host.Host, addr string) error {
 	return nil
 }
 
-func handleIncomingStreams(ctx context.Context, host host.Host) {
-	host.SetStreamHandler("/Hello", func(s network.Stream) {
-		// Your existing stream handling code goes here
-	})
-}
-
-func send(s network.Stream, msg string) {
+func send(s network.Stream, msg message) {
 	encoder := json.NewEncoder(s)
 	if err := encoder.Encode(msg); err != nil {
 		fmt.Println("Error encoding message:", err)
@@ -64,25 +59,58 @@ func send(s network.Stream, msg string) {
 
 func streamHandler(s network.Stream) {
 	decoder := json.NewDecoder(s)
-	var msg string
+	var msg message
 	if err := decoder.Decode(&msg); err != nil {
 		fmt.Println("Error decoding message:", err)
 		return
 	}
 
-	fmt.Println("Received message:", msg)
+	fmt.Println("Received message:\n",
+		"\nID:", msg.ID,
+		"\nCode:", msg.Code,
+		"\nWant:", msg.Want,
+		"\nData:", msg.Data,
+	)
+
+	switch msg.ID {
+	case 0:
+		send(s, msg)
+		fmt.Println("Sent Hello message to", s.Conn().RemoteMultiaddr().String())
+
+	case 1:
+		fmt.Println("Received transaction. Response: List of encoded transactions (can be 1 or more).")
+
+	case 2:
+		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
+
+	case 3:
+		fmt.Println("Request: List of block numbers (upto 10 max) Response (expected): Encoded version of a list of asked blocks")
+
+	case 4:
+		fmt.Println("Request (to which this response should be made): List of block numbers (upto 10 max) Response: Encoded version of a list of asked blocks")
+
+	default:
+		fmt.Println("ERR", msg)
+	}
 }
 
 func sendInitialHelloMessage(ctx context.Context, host host.Host, peerAddrInfo peer.AddrInfo, peerMA multiaddr.Multiaddr) error {
-	s, err := host.NewStream(ctx, peerAddrInfo.ID, "/Hello")
+	s, err := host.NewStream(ctx, peerAddrInfo.ID, "/")
 	if err != nil {
 		return err
 	}
 	defer s.Close()
 
-	send(s, "Hello")
+	send(s, message{ID: 0, Code: 0, Want: 0, Data: "Hello"})
 	fmt.Println("Sent Hello message to", peerMA.String())
 	return nil
+}
+
+type message struct {
+	ID   uint64      `json:"id"`
+	Code int         `json:"code"`
+	Want int         `json:"want"`
+	Data interface{} `json:"data"`
 }
 
 func Run(ctx context.Context, peerAddrs []string) {
@@ -103,7 +131,7 @@ func Run(ctx context.Context, peerAddrs []string) {
 		}
 	}
 
-	handleIncomingStreams(ctx, host)
+	host.SetStreamHandler("/", streamHandler)
 
 	// Send initial Hello message to each peer
 	for _, addr := range peerAddrs {
@@ -127,8 +155,6 @@ func Run(ctx context.Context, peerAddrs []string) {
 			continue
 		}
 	}
-
-	host.SetStreamHandler("/Hello", streamHandler)
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)
