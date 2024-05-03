@@ -4,12 +4,17 @@ import (
 	"context"
 	"log"
 
+	"github.com/joho/godotenv"
 	n "github.com/malay44/chadChain/core/network"
 	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		panic(err)
+	}
 	// n.Http()
 	n.PeerAddrs = []string{
 		// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
