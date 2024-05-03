@@ -1,6 +1,10 @@
 package types
 
-import "math/big"
+import (
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/rlp"
+)
 
 type Transaction struct {
 	To    [20]byte // The address of the receiver
@@ -11,7 +15,7 @@ type Transaction struct {
 	S     *big.Int // Signature value s of the transaction
 }
 
-func (t *Transaction) CreateTransaction(to [20]byte, value uint64, nonce uint64, v *big.Int, r *big.Int, s *big.Int) Transaction {
+func CreateTransaction(to [20]byte, value uint64, nonce uint64, v *big.Int, r *big.Int, s *big.Int) Transaction {
 	return Transaction{to, value, nonce, v, r, s}
 }
 
@@ -24,4 +28,26 @@ func (t *Transaction) SendTransaction(tr Transaction) {
 func (t *Transaction) AddTransaction(tr Transaction) {
 	// get transaction from network
 	// add to transaction pool
+}
+
+func EncodeTransaction(tx Transaction) ([]byte, error) {
+	encodedTx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		return nil, err
+	}
+	return encodedTx, nil
+}
+
+func DecodeTransaction(data []byte) (Transaction, error) {
+	var tx Transaction
+	if err := rlp.DecodeBytes(data, &tx); err != nil {
+		return tx, err
+	}
+	return tx, nil
+}
+
+// Validate transaction
+func (t *Transaction) ValidateTransaction(tr Transaction) bool {
+	// validate transaction
+	return true
 }

@@ -22,6 +22,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/elastic/gosigar v0.14.2 // indirect
+	github.com/ethereum/go-ethereum v1.14.0 // indirect
 	github.com/flynn/noise v1.1.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
@@ -29,12 +30,13 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/golang/snappy v0.0.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20240207164012-fb44976bdcd5 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
+	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
@@ -88,12 +90,12 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a // indirect
-	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.18.0 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	golang.org/x/tools v0.20.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
