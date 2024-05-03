@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/ethereum/go-ethereum/rlp"
 	s "github.com/malay44/chadChain/core/storage"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -128,4 +129,20 @@ func ComputeRootHash() ([]byte, error) {
 // send account over network
 func (ac *Account) SendAccount(Account Account) {
 	// propagate in the network
+}
+
+func EncodeAccount(account Account) ([]byte, error) {
+	encodedAccount, err := rlp.EncodeToBytes(account)
+	if err != nil {
+		return nil, err
+	}
+	return encodedAccount, nil
+}
+
+func DecodeAccount(data []byte) (Account, error) {
+	var account Account
+	if err := rlp.DecodeBytes(data, &account); err != nil {
+		return account, err
+	}
+	return account, nil
 }
