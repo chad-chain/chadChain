@@ -39,7 +39,6 @@ func setupHost() (host.Host, error) {
 }
 
 func connectToPeer(addr string) error {
-func connectToPeer(addr string) error {
 	peerMA, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
 		return err
@@ -50,7 +49,6 @@ func connectToPeer(addr string) error {
 		return err
 	}
 
-	if err := hostVar.Connect(CtxVar, *peerAddrInfo); err != nil {
 	if err := hostVar.Connect(CtxVar, *peerAddrInfo); err != nil {
 		return err
 	}
@@ -143,9 +141,6 @@ type message struct {
 	Data interface{} `json:"data"`
 }
 
-func Run() {
-	var err error
-	hostVar, err = setupHost()
 func Run() {
 	var err error
 	hostVar, err = setupHost()

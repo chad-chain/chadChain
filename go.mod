@@ -2,13 +2,12 @@ module github.com/malay44/chadChain
 
 go 1.21.6
 
-require golang.org/x/crypto v0.22.0
-
 require (
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/libp2p/go-libp2p v0.33.2
 	github.com/multiformats/go-multiaddr v0.12.3
 	github.com/vmihailenco/msgpack/v5 v5.4.1
+	golang.org/x/crypto v0.22.0
 )
 
 require (
