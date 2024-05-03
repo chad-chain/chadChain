@@ -2,19 +2,20 @@ package network
 
 import (
 	"context"
-	"encoding/hex"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
+	"reflect"
 	"syscall"
 
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	t "github.com/malay44/chadChain/core/types"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -25,20 +26,24 @@ var (
 )
 
 func setupHost() (host.Host, error) {
-	Hex := os.Getenv("PRIV_HEX")
-	println("Hex:", Hex)
-	// Decode hex string to bytes
-	privBytes, err := hex.DecodeString(Hex)
-	if err != nil {
-		panic(err)
-	}
+	// Hex := os.Getenv("PRIV_HEX")
 
-	// Parse bytes into a private key
-	privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
-	if err != nil {
-		panic(err)
-	}
-	host, err := libp2p.New(libp2p.Identity(privKey), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	// fmt.Println("Hex:", Hex)
+	// // Decode hex string to bytes
+	// privBytes, err := hex.DecodeString(Hex)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// // Parse bytes into a private key
+	// privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
+
+	host, err := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +72,7 @@ func connectToPeer(addr string) error {
 }
 
 func sendToAllPeers(msg message) {
+
 	for _, p := range PeerAddrs {
 		peerMA, err := multiaddr.NewMultiaddr(p)
 		if err != nil {
@@ -118,7 +124,7 @@ func streamHandler(s network.Stream) {
 		fmt.Println("Sent Hello message to", s.Conn().RemoteMultiaddr().String())
 
 	case 1:
-		recieveTransaction(msg.Data)
+		ReceiveTransaction(msg.Data)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -134,13 +140,35 @@ func streamHandler(s network.Stream) {
 	}
 }
 
-func recieveTransaction(tr any) {
+func ReceiveTransaction(base64Str any) {
+	decoded, err := base64.StdEncoding.DecodeString(base64Str.(string)) // Decode the base64 string
+	if err != nil {
+		fmt.Println("Error decoding base64:", err)
+		return
+	}
+
+	fmt.Println("Received (base64 decoded):", decoded)
+
+	fmt.Println("Received type (base64 decoded):", reflect.TypeOf(decoded))
+	var tr string // Replace YourTransactionStruct with the actual structure of your transaction
+
+	if err := rlp.DecodeBytes(decoded, &tr); err != nil {
+		fmt.Println("Error decoding transaction:", err)
+		fmt.Printf("Decoded bytes: %v\n", decoded)
+		return
+	}
+
 	fmt.Println("Received transaction:", tr)
 }
 
-func SendTransaction(tr t.Transaction) {
-	sendToAllPeers(message{ID: 1, Code: 1, Want: 1, Data: tr})
-	fmt.Println("Sent transaction:", tr)
+func SendTransaction(tr interface{}) {
+	data, err := rlp.EncodeToBytes(tr)
+	if err != nil {
+		fmt.Println("Error encoding transaction:", err)
+		return
+	}
+	fmt.Println("Sent transaction:", data)
+	sendToAllPeers(message{ID: 1, Code: 1, Want: 1, Data: data})
 }
 
 type message struct {
@@ -157,7 +185,6 @@ func Run() {
 		panic(err)
 	}
 	defer hostVar.Close()
-	defer hostVar.Close()
 
 	fmt.Println("Addresses:", hostVar.Addrs())
 	// fmt.Println("ID:", hostVar.ID())
@@ -171,7 +198,7 @@ func Run() {
 		}
 		fmt.Println("Connected to peer:", addr)
 	}
-	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: "Hello"})
+	SendTransaction("Hello")
 	hostVar.SetStreamHandler("/", streamHandler)
 
 	sigCh := make(chan os.Signal)
