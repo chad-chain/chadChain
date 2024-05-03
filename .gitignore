@@ -19,3 +19,13 @@
 
 # Go workspace file
 go.work
+
+# database 
+database/
+
+# binary files
+bin/
+
+# misc
+learn/
+.DS_Store

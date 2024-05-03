@@ -1,4 +1,4 @@
-package main
+package deprecated_main
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	t "github.com/malay44/chadChain/core/types"
 )
 
-func main() {
+func _main() {
 	// n.Http()
 	// n.Rpc()
 
