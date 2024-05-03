@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -24,13 +25,20 @@ var (
 )
 
 func setupHost() (host.Host, error) {
-	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
-
+	Hex := os.Getenv("PRIV_HEX")
+	println("Hex:", Hex)
+	// Decode hex string to bytes
+	privBytes, err := hex.DecodeString(Hex)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	host, err := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	// Parse bytes into a private key
+	privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
+	if err != nil {
+		panic(err)
+	}
+	host, err := libp2p.New(libp2p.Identity(privKey), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
 	if err != nil {
 		return nil, err
 	}
