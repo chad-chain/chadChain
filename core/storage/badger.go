@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/vmihailenco/msgpack/v5"
+	rlp "github.com/malay44/chadChain/core/utils"
 )
 
 // CheckFunc is called during key iteration through the badger DB in order to
@@ -51,7 +51,7 @@ func Insert(key []byte, value interface{}) func(*badger.Txn) error {
 			return fmt.Errorf("badger.go/Insert: key already exists")
 		}
 
-		val, err := msgpack.Marshal(value)
+		val, err := rlp.EncodeData(value, false)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func Update(key []byte, value interface{}) func(*badger.Txn) error {
 			return fmt.Errorf("badger.go/Update: key not found")
 		}
 
-		val, err := msgpack.Marshal(value)
+		val, err := rlp.EncodeData(value, false)
 		if err != nil {
 			return fmt.Errorf("badger.go/Update: could not marshal value: %v", err)
 		}
@@ -93,7 +93,7 @@ func Get(key []byte, entity interface{}) func(*badger.Txn) error {
 			return err
 		}
 		err = item.Value(func(val []byte) error {
-			err := msgpack.Unmarshal(val, entity)
+			err := rlp.DecodeData(val, entity)
 			return err
 		})
 		return err
@@ -140,7 +140,7 @@ func Traverse(prefix []byte, iteration IterationFunc) func(*badger.Txn) error {
 
 				// decode into the entity
 				entity := create()
-				err := msgpack.Unmarshal(val, entity)
+				err := rlp.DecodeData(val, entity)
 				if err != nil {
 					return fmt.Errorf("could not unmarshal entity: %w", err)
 				}
