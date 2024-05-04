@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -25,23 +24,26 @@ var (
 )
 
 func setupHost() (host.Host, error) {
-	Hex := os.Getenv("PRIV_HEX")
+	// Hex := os.Getenv("PRIV_HEX")
 
-	// Decode hex string to bytes
-	privBytes, err := hex.DecodeString(Hex)
+	// // Decode hex string to bytes
+	// privBytes, err := hex.DecodeString(Hex)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// // Parse bytes into a private key
+	// privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	// Parse bytes into a private key
-	privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
-	if err != nil {
-		panic(err)
-	}
-
-	// priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
-
-	host, err := libp2p.New(libp2p.Identity(privKey), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/3000"))
+	host, err := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0000"))
 	if err != nil {
 		return nil, err
 	}
@@ -69,10 +71,17 @@ func connectToPeer(addr string) error {
 	return nil
 }
 
+func checkForSelf(addr string) bool {
+	if addr == hostVar.Addrs()[1].String()+"/p2p/"+hostVar.ID().String() || addr == hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String() {
+		return true
+	}
+	return false
+}
+
 func sendToAllPeers(msg message) {
 
 	for _, p := range PeerAddrs {
-		if p == hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String() {
+		if checkForSelf(p) {
 			println("Skipping self address")
 			continue
 		}
@@ -108,7 +117,7 @@ func send(s network.Stream, msg message) {
 
 func streamHandler(s network.Stream) {
 	decoder := json.NewDecoder(s)
-	var decodedData interface{}
+	var decodedData []byte
 	var msg message
 	if err := decoder.Decode(&msg); err != nil {
 		fmt.Println("Error decoding message:", err)
@@ -119,22 +128,25 @@ func streamHandler(s network.Stream) {
 
 	switch msg.ID {
 	case 0:
-
-		err := rlp.DecodeData(msg.Data, decodedData)
+		err := rlp.DecodeData(msg.Data, &decodedData)
 		if err != nil {
 			fmt.Println("Error decoding data:", err)
 			return
 		}
-		fmt.Println("Received PING:", decodedData)
-		sendPongToPeer(senderID)
+		if string(decodedData) == "PING" {
+			fmt.Println("Received: PING")
+			sendPongToPeer(senderID)
+		} else {
+			fmt.Println("Received:", string(decodedData))
+		}
 
 	case 1:
-		err := rlp.DecodeData(msg.Data, decodedData)
+		err := rlp.DecodeData(msg.Data, &decodedData)
 		if err != nil {
 			fmt.Println("Error decoding data:", err)
 			return
 		}
-		fmt.Println("Received PONG:", decodedData)
+		fmt.Println("Received PONG:", string(decodedData))
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -203,7 +215,7 @@ func Run() {
 	// fmt.Println("Peer_ADDR:", os.Getenv("PEER_ADDR"))
 
 	for _, addr := range PeerAddrs {
-		if addr == hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String() {
+		if checkForSelf(addr) {
 			println("Skipping self address")
 			continue
 		}
