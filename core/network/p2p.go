@@ -2,19 +2,18 @@ package network
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	rlp "github.com/malay44/chadChain/core/utils"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -112,11 +111,11 @@ func streamHandler(s network.Stream) {
 
 	switch msg.ID {
 	case 0:
-		DecodeReceived(msg.Data, false)
+		rlp.DecodeReceived(msg.Data, false)
 		sendPong()
 
 	case 1:
-		DecodeReceived(msg.Data, false)
+		rlp.DecodeReceived(msg.Data, false)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -133,55 +132,11 @@ func streamHandler(s network.Stream) {
 }
 
 func sendPing() {
-	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: EncodeData("PING", false)})
+	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: rlp.EncodeData("PING", false)})
 }
 
 func sendPong() {
-	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: EncodeData("PONG", false)})
-}
-
-func DecodeReceived(base64Str any, isJson bool) interface{} {
-
-	decoded, err := base64.StdEncoding.DecodeString(base64Str.(string)) // Decode the base64 string
-	if err != nil {
-		fmt.Println("Error decoding base64:", err)
-		return nil
-	}
-
-	var data string
-
-	if err := rlp.DecodeBytes(decoded, &data); err != nil {
-		fmt.Println("Error decoding :", err)
-		fmt.Printf("Decoded bytes: %v\n", decoded)
-		return nil
-	}
-
-	if isJson {
-		var finalData interface{}
-		json.Unmarshal([]byte(data), &finalData)
-		fmt.Println("Received decoded:", finalData)
-		return finalData
-	}
-
-	fmt.Println("Received decoded:", data)
-	return data
-}
-
-func EncodeData(data interface{}, isJson bool) []byte {
-	var err error
-	if isJson {
-		data, err = json.Marshal(data)
-		if err != nil {
-			fmt.Println("Error json marshaling :", err)
-			return nil
-		}
-	}
-	encodedData, err := rlp.EncodeToBytes(data)
-	if err != nil {
-		fmt.Println("Error encoding :", err)
-		return nil
-	}
-	return encodedData
+	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: rlp.EncodeData("PONG", false)})
 }
 
 type message struct {
