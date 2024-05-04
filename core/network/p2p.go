@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"reflect"
 	"syscall"
 
 	"github.com/ethereum/go-ethereum/rlp"
@@ -124,7 +123,8 @@ func streamHandler(s network.Stream) {
 		fmt.Println("Sent Hello message to", s.Conn().RemoteMultiaddr().String())
 
 	case 1:
-		ReceiveTransaction(msg.Data)
+		x := ReceiveDecode(msg.Data, false)
+		fmt.Println("Received transaction:", x)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -140,25 +140,31 @@ func streamHandler(s network.Stream) {
 	}
 }
 
-func ReceiveTransaction(base64Str any) {
+func ReceiveDecode(base64Str any, isJson bool) interface{} {
+
 	decoded, err := base64.StdEncoding.DecodeString(base64Str.(string)) // Decode the base64 string
 	if err != nil {
 		fmt.Println("Error decoding base64:", err)
-		return
+		return nil
 	}
 
-	fmt.Println("Received (base64 decoded):", decoded)
+	var data string
 
-	fmt.Println("Received type (base64 decoded):", reflect.TypeOf(decoded))
-	var tr string // Replace YourTransactionStruct with the actual structure of your transaction
-
-	if err := rlp.DecodeBytes(decoded, &tr); err != nil {
+	if err := rlp.DecodeBytes(decoded, &data); err != nil {
 		fmt.Println("Error decoding transaction:", err)
 		fmt.Printf("Decoded bytes: %v\n", decoded)
-		return
+		return nil
 	}
 
-	fmt.Println("Received transaction:", tr)
+	if isJson {
+		var finalData interface{}
+		json.Unmarshal([]byte(data), &finalData)
+		fmt.Println("Received transaction:", finalData)
+		return finalData
+	}
+
+	fmt.Println("Received transaction:", data)
+	return data
 }
 
 func SendTransaction(tr interface{}) {
