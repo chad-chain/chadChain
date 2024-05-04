@@ -43,9 +43,7 @@ func setupHost() (host.Host, error) {
 	// priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
 
 	println("Private Key:", privKey)
-	if err != nil {
-		return nil, err
-	}
+
 	host, err := libp2p.New(libp2p.Identity(privKey), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/3000"))
 	if err != nil {
 		return nil, err
@@ -108,6 +106,7 @@ func send(s network.Stream, msg message) {
 
 func streamHandler(s network.Stream) {
 	decoder := json.NewDecoder(s)
+	var decodedData interface{}
 	var msg message
 	if err := decoder.Decode(&msg); err != nil {
 		fmt.Println("Error decoding message:", err)
@@ -118,21 +117,22 @@ func streamHandler(s network.Stream) {
 
 	switch msg.ID {
 	case 0:
-		decoded, err := rlp.DecodeReceived(msg.Data, false)
+
+		err := rlp.DecodeData(msg.Data, decodedData)
 		if err != nil {
 			fmt.Println("Error decoding data:", err)
 			return
 		}
-		fmt.Println("Received PING:", decoded)
+		fmt.Println("Received PING:", decodedData)
 		sendPongToPeer(senderID)
 
 	case 1:
-		decoded, err := rlp.DecodeReceived(msg.Data, false)
+		err := rlp.DecodeData(msg.Data, decodedData)
 		if err != nil {
 			fmt.Println("Error decoding data:", err)
 			return
 		}
-		fmt.Println("Received PONG:", decoded)
+		fmt.Println("Received PONG:", decodedData)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")

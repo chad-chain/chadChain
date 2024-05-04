@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 
+	"github.com/joho/godotenv"
 	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
 	t "github.com/malay44/chadChain/core/types"
@@ -11,16 +13,20 @@ import (
 
 func main() {
 	// n.Http()
-	// n.PeerAddrs = []string{
-	// 	// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
-	// }
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	n.PeerAddrs = []string{
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K"}
+		// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
+	}
+	// n.PeerAddrs = []string{
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K"}
 
-	// n.CtxVar = context.Background()
-	// n.Run()
+	n.CtxVar = context.Background()
+	n.Run()
 	// db.InitBadger()
 	// defer db.BadgerDB.Close()
 	// initGlobalVar()
