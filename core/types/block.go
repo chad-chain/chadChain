@@ -116,3 +116,9 @@ func GetParentBlockTransactionsRoot() [32]byte {
 	// get parent block transactions root
 	return [32]byte{}
 }
+
+// Get ParentHash
+func GetParentHash() [32]byte {
+	// get parent hash
+	return [32]byte{}
+}

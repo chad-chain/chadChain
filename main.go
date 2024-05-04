@@ -1,30 +1,29 @@
 package main
 
 import (
-	"context"
 	"log"
+	"time"
 
-	"github.com/joho/godotenv"
+	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
-	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		panic(err)
-	}
 	// n.Http()
+	// n.PeerAddrs = []string{
+	// 	// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
+	// }
 	n.PeerAddrs = []string{
-		// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
-	}
+		"12D3KooWPot5PSrTg6K",
+		"12D3KooWPot5PSrTg6K",
+		"12D3KooWPot5PSrTg6K"}
 
-	n.CtxVar = context.Background()
-	n.Run()
-	db.InitBadger()
-	defer db.BadgerDB.Close()
-	initGlobalVar()
+	// n.CtxVar = context.Background()
+	// n.Run()
+	// db.InitBadger()
+	// defer db.BadgerDB.Close()
+	// initGlobalVar()
 
 	// bbc := t.Block{}
 	// bbch := t.Header{}
@@ -48,17 +47,70 @@ func main() {
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
 	log.Default().Println("Hello, world!")
+
+	// ch := make(chan t.Block)
+	chn := make(chan t.Block)
+	timerCh := make(chan string)
+
+	go Timer(timerCh, n.PeerAddrs)
+	log.Default().Println("Both Chanells Created")
+
+	transactionpool := t.Transactionpool{}
+	for {
+		select {
+		case miner := <-timerCh:
+			log.Default().Println("Miner selected", miner)
+			// var minerinByte [20]byte
+			// copy(minerinByte[:], []byte(miner))
+
+			go m.BuildBlock(chn, &transactionpool, [20]byte{})
+		case blk := <-chn:
+			log.Default().Println("Mined Block: ", blk)
+			log.Default().Println(blk)
+		}
+	}
 }
 
-func initGlobalVar() {
-	err := db.BadgerDB.View(db.Get([]byte("stateRootHash"), &t.StateRootHash))
-	if err != nil {
-		log.Default().Printf("StateRootHash not found\n")
-		log.Default().Println(err.Error())
-		return
+func Timer(timerCh chan string, miners []string) {
+	// find miner inde
+	index := 1
+	numberOfMiners := len(miners)
+	interval := 2 * numberOfMiners
+	time.Sleep(time.Duration(index) * time.Second)
+	timerCh <- miners[index]
+
+	for {
+		log.Default().Println("Timer loop 2 sec")
+		time.Sleep(time.Duration(interval) * time.Second)
+		timerCh <- miners[index]
 	}
-	log.Default().Printf("StateRootHash: %x\n", t.StateRootHash)
 }
+
+// func test(ch chan t.Block, chn chan t.Block) {
+// 	for {
+// 		select {
+// 		case blk := <-ch:
+// 			log.Default().Println("Block received")
+// 			log.Default().Println(blk)
+// 			go m.MineBlock(chn, blk)
+// 		case blkm := <-chn:
+// 			log.Default().Println("Mined block received")
+// 			log.Default().Println(blkm)
+// 			chn <- blkm
+// 			return
+// 		}
+// 	}
+// }
+
+// func initGlobalVar() {
+// 	err := db.BadgerDB.View(db.Get([]byte("stateRootHash"), &t.StateRootHash))
+// 	if err != nil {
+// 		log.Default().Printf("StateRootHash not found\n")
+// 		log.Default().Println(err.Error())
+// 		return
+// 	}
+// 	log.Default().Printf("StateRootHash: %x\n", t.StateRootHash)
+// }
 
 // func testDBFunc(block t.Block) {
 // 	err := db.BadgerDB.Update(db.Insert([]byte("block"), block))

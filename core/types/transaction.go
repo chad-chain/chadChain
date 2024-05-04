@@ -51,3 +51,22 @@ func (t *Transaction) ValidateTransaction(tr Transaction) bool {
 	// validate transaction
 	return true
 }
+
+func EncodeTransactions(transactions []Transaction) ([]byte, error) {
+
+	var encodedTransactions [][]byte
+	for _, tx := range transactions {
+		encodedTx, err := rlp.EncodeToBytes(tx)
+		if err != nil {
+			return nil, err
+		}
+		encodedTransactions = append(encodedTransactions, encodedTx)
+	}
+
+	encodedData, err := rlp.EncodeToBytes(encodedTransactions)
+	if err != nil {
+		return nil, err
+	}
+
+	return encodedData, nil
+}

@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"time"
 
-	m "github.com/malay44/chadChain/core/mining"
 	t "github.com/malay44/chadChain/core/types"
 )
 
@@ -41,18 +39,18 @@ func _main() {
 
 func TestMineBlock() {
 	// Create a dummy header for testing
-	header := t.Header{
-		ParentHash:       [32]byte{},
-		Miner:            [20]byte{},
-		StateRoot:        [32]byte{},
-		TransactionsRoot: [32]byte{},
-		Difficulty:       8,
-		TotalDifficulty:  8,
-		Number:           875463,
-		Timestamp:        uint64(time.Now().Unix()), // Set current Unix timestamp
-		ExtraData:        []byte{},
-		Nonce:            76,
-	}
+	// header := t.Header{
+	// 	ParentHash:       [32]byte{},
+	// 	Miner:            [20]byte{},
+	// 	StateRoot:        [32]byte{},
+	// 	TransactionsRoot: [32]byte{},
+	// 	Difficulty:       8,
+	// 	TotalDifficulty:  8,
+	// 	Number:           875463,
+	// 	Timestamp:        uint64(time.Now().Unix()), // Set current Unix timestamp
+	// 	ExtraData:        []byte{},
+	// 	Nonce:            76,
+	// }
 
 	// Create a dummy transaction pool for testing
 
@@ -79,27 +77,27 @@ func TestMineBlock() {
 	log.Default().Println("transactionpool size : ", len(transactionpool.Transactions))
 
 	// Call the MineBlock function
-	minedBlock, err := m.MineBlock(header, transactionpool)
+	// minedBlock, err := m.MineBlock(header, transactionpool)
 
-	if err != nil {
-		log.Default().Println("Mining failed: ", err)
-	}
-	log.Default().Println("transactionpool size : ", len(transactionpool.Transactions))
+	// if err != nil {
+	// 	log.Default().Println("Mining failed: ", err)
+	// }
+	// log.Default().Println("transactionpool size : ", len(transactionpool.Transactions))
 
-	dummyTransaction2 := t.Transaction{
-		To:    [20]byte{},
-		Value: 2354,
-		Nonce: 67,
-		V:     new(big.Int).SetInt64(67633),
-		R:     new(big.Int).SetInt64(023557),
-		S:     new(big.Int).SetInt64(7563652),
-	}
+	// dummyTransaction2 := t.Transaction{
+	// 	To:    [20]byte{},
+	// 	Value: 2354,
+	// 	Nonce: 67,
+	// 	V:     new(big.Int).SetInt64(67633),
+	// 	R:     new(big.Int).SetInt64(023557),
+	// 	S:     new(big.Int).SetInt64(7563652),
+	// }
 
-	transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction2)
-	transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction1)
-	transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction)
+	// transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction2)
+	// transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction1)
+	// transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction)
 
-	transactionpool.RemoveCommonTransactions(minedBlock.Transactions)
+	// transactionpool.RemoveCommonTransactions(minedBlock.Transactions)
 
 	// Add more assertions as needed
 }
