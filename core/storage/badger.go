@@ -69,23 +69,27 @@ func Update(key []byte, value interface{}) func(*badger.Txn) error {
 	return func(txn *badger.Txn) error {
 		_, err := txn.Get(key)
 		if err != nil {
-			return fmt.Errorf("badger.go/Update: key not found")
+			fmt.Printf("badger.go/Update: key not found %v", err)
+			return err
 		}
 
 		val, err := rlp.EncodeData(value, false)
 		if err != nil {
-			return fmt.Errorf("badger.go/Update: could not marshal value: %v", err)
+			fmt.Printf("badger.go/Update: could not marshal value: %v", err)
+			return err
 		}
 
 		err = txn.Set(key, val)
 		if err != nil {
-			return fmt.Errorf("badger.go/Update: could not set value: %v", err)
+			fmt.Printf("badger.go/Update: could not set value: %v", err)
+			return err
 		}
 
 		return nil
 	}
 }
 
+// Entity is a pointer to a struct that we want to decode the value into.
 func Get(key []byte, entity interface{}) func(*badger.Txn) error {
 	return func(txn *badger.Txn) error {
 		item, err := txn.Get(key)

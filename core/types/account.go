@@ -65,6 +65,12 @@ func (ac *Account) AddAccount() (string, string, error) {
 	err = s.BadgerDB.Update(func(tx *badger.Txn) error {
 		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
 		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				err = s.Insert([]byte("stateRootHash"), StateRootHash)(tx)
+				if err != nil {
+					return err
+				}
+			}
 			return err
 		}
 		return nil
