@@ -47,6 +47,11 @@ func main() {
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
 	log.Default().Println("Hello, world!")
+	miningInit()
+
+}
+
+func miningInit() {
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)
@@ -84,6 +89,7 @@ func Timer(timerCh chan string, miners []string) {
 		time.Sleep(time.Duration(interval) * time.Second)
 		timerCh <- miners[index]
 	}
+
 }
 
 // func test(ch chan t.Block, chn chan t.Block) {
