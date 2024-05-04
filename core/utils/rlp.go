@@ -8,46 +8,41 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-func DecodeReceived(base64Str any, isJson bool) interface{} {
+func DecodeReceived(base64Str any, isJson bool) (interface{}, error) {
 
 	decoded, err := base64.StdEncoding.DecodeString(base64Str.(string)) // Decode the base64 string
 	if err != nil {
-		fmt.Println("Error decoding base64:", err)
-		return nil
+		return nil, fmt.Errorf("error decoding base64: %v", err)
 	}
 
 	var data string
 
 	if err := rlp.DecodeBytes(decoded, &data); err != nil {
-		fmt.Println("Error decoding :", err)
-		fmt.Printf("Decoded bytes: %v\n", decoded)
-		return nil
+		return nil, fmt.Errorf("error decoding RLP bytes: %v", err)
 	}
 
 	if isJson {
 		var finalData interface{}
-		json.Unmarshal([]byte(data), &finalData)
-		fmt.Println("Received decoded:", finalData)
-		return finalData
+		if err := json.Unmarshal([]byte(data), &finalData); err != nil {
+			return nil, fmt.Errorf("error unmarshaling JSON: %v", err)
+		}
+		return finalData, nil
 	}
 
-	fmt.Println("Received decoded:", data)
-	return data
+	return data, nil
 }
 
-func EncodeData(data interface{}, isJson bool) []byte {
+func EncodeData(data interface{}, isJson bool) ([]byte, error) {
 	var err error
 	if isJson {
 		data, err = json.Marshal(data)
 		if err != nil {
-			fmt.Println("Error json marshaling :", err)
-			return nil
+			return nil, fmt.Errorf("error json marshaling: %v", err)
 		}
 	}
 	encodedData, err := rlp.EncodeToBytes(data)
 	if err != nil {
-		fmt.Println("Error encoding :", err)
-		return nil
+		return nil, fmt.Errorf("error encoding: %v", err)
 	}
-	return encodedData
+	return encodedData, nil
 }
