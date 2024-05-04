@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,7 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	t "github.com/malay44/chadChain/core/types"
+	rlp "github.com/malay44/chadChain/core/utils"
 	"github.com/multiformats/go-multiaddr"
 )
 
@@ -25,20 +24,24 @@ var (
 )
 
 func setupHost() (host.Host, error) {
-	Hex := os.Getenv("PRIV_HEX")
-	println("Hex:", Hex)
-	// Decode hex string to bytes
-	privBytes, err := hex.DecodeString(Hex)
-	if err != nil {
-		panic(err)
-	}
+	// Hex := os.Getenv("PRIV_HEX")
 
-	// Parse bytes into a private key
-	privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
-	if err != nil {
-		panic(err)
-	}
-	host, err := libp2p.New(libp2p.Identity(privKey), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	// fmt.Println("Hex:", Hex)
+	// // Decode hex string to bytes
+	// privBytes, err := hex.DecodeString(Hex)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// // Parse bytes into a private key
+	// privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
+
+	host, err := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +70,7 @@ func connectToPeer(addr string) error {
 }
 
 func sendToAllPeers(msg message) {
+
 	for _, p := range PeerAddrs {
 		peerMA, err := multiaddr.NewMultiaddr(p)
 		if err != nil {
@@ -105,20 +109,23 @@ func streamHandler(s network.Stream) {
 		return
 	}
 
-	fmt.Println("Received message:\n",
-		"\nID:", msg.ID,
-		"\nCode:", msg.Code,
-		"\nWant:", msg.Want,
-		"\nData:", msg.Data,
-	)
-
 	switch msg.ID {
 	case 0:
-		send(s, msg)
-		fmt.Println("Sent Hello message to", s.Conn().RemoteMultiaddr().String())
+		decoded, err := rlp.DecodeReceived(msg.Data, false)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
+		fmt.Println("Received PING:", decoded)
+		sendPong()
 
 	case 1:
-		recieveTransaction(msg.Data)
+		decoded, err := rlp.DecodeReceived(msg.Data, false)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
+		fmt.Println("Received PONG:", decoded)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -134,20 +141,29 @@ func streamHandler(s network.Stream) {
 	}
 }
 
-func recieveTransaction(tr any) {
-	fmt.Println("Received transaction:", tr)
+func sendPing() {
+	data, err := rlp.EncodeData("PING", false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: data})
 }
 
-func SendTransaction(tr t.Transaction) {
-	sendToAllPeers(message{ID: 1, Code: 1, Want: 1, Data: tr})
-	fmt.Println("Sent transaction:", tr)
+func sendPong() {
+	data, err := rlp.EncodeData("PONG", false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: data})
 }
 
 type message struct {
-	ID   uint64      `json:"id"`
-	Code int         `json:"code"`
-	Want int         `json:"want"`
-	Data interface{} `json:"data"`
+	ID   uint64 `json:"id"`
+	Code int    `json:"code"`
+	Want int    `json:"want"`
+	Data []byte `json:"data"`
 }
 
 func Run() {
@@ -156,7 +172,6 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-	defer hostVar.Close()
 	defer hostVar.Close()
 
 	fmt.Println("Addresses:", hostVar.Addrs())
@@ -171,7 +186,9 @@ func Run() {
 		}
 		fmt.Println("Connected to peer:", addr)
 	}
-	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: "Hello"})
+
+	sendPing()
+
 	hostVar.SetStreamHandler("/", streamHandler)
 
 	sigCh := make(chan os.Signal)
