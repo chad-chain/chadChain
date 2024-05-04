@@ -1,23 +1,17 @@
 package utils
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-func DecodeReceived(base64Str any, isJson bool) (interface{}, error) {
-
-	decoded, err := base64.StdEncoding.DecodeString(base64Str.(string)) // Decode the base64 string
-	if err != nil {
-		return nil, fmt.Errorf("error decoding base64: %v", err)
-	}
+func DecodeReceived(endoded any, isJson bool) (interface{}, error) {
 
 	var data string
 
-	if err := rlp.DecodeBytes(decoded, &data); err != nil {
+	if err := rlp.DecodeBytes(endoded.([]byte), &data); err != nil {
 		return nil, fmt.Errorf("error decoding RLP bytes: %v", err)
 	}
 
