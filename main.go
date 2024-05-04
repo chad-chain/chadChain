@@ -6,13 +6,19 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	initialize "github.com/malay44/chadChain/core/initialize"
 	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
+	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
 	// n.Http()
+	db.InitBadger()
+	defer db.BadgerDB.Close()
+	initialize.GlobalDBVar()
+
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -28,9 +34,6 @@ func main() {
 
 	n.CtxVar = context.Background()
 	n.Run()
-	// db.InitBadger()
-	// defer db.BadgerDB.Close()
-	// initGlobalVar()
 
 	// bbc := t.Block{}
 	// bbch := t.Header{}
