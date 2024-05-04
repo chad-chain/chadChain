@@ -27,7 +27,6 @@ var (
 func setupHost() (host.Host, error) {
 	Hex := os.Getenv("PRIV_HEX")
 
-	fmt.Println("Hex:", Hex)
 	// Decode hex string to bytes
 	privBytes, err := hex.DecodeString(Hex)
 	if err != nil {
@@ -41,8 +40,6 @@ func setupHost() (host.Host, error) {
 	}
 
 	// priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
-
-	println("Private Key:", privKey)
 
 	host, err := libp2p.New(libp2p.Identity(privKey), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/3000"))
 	if err != nil {
@@ -75,6 +72,11 @@ func connectToPeer(addr string) error {
 func sendToAllPeers(msg message) {
 
 	for _, p := range PeerAddrs {
+		if p == hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String() {
+			println("Skipping self address")
+			continue
+		}
+
 		peerMA, err := multiaddr.NewMultiaddr(p)
 		if err != nil {
 			fmt.Println("Error creating multiaddr:", err)
@@ -158,6 +160,7 @@ func sendPing() {
 }
 
 func sendPongToPeer(peerID peer.ID) {
+
 	data, err := rlp.EncodeData("PONG", false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
@@ -200,6 +203,10 @@ func Run() {
 	// fmt.Println("Peer_ADDR:", os.Getenv("PEER_ADDR"))
 
 	for _, addr := range PeerAddrs {
+		if addr == hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String() {
+			println("Skipping self address")
+			continue
+		}
 		if err := connectToPeer(addr); err != nil {
 			fmt.Println("Error connecting to peer:", err)
 			continue
