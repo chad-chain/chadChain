@@ -18,7 +18,8 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	n.PeerAddrs = []string{
-		// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
+		"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
+		"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
 	}
 	// n.PeerAddrs = []string{
 	// 	"12D3KooWPot5PSrTg6K",
