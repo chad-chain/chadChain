@@ -111,11 +111,21 @@ func streamHandler(s network.Stream) {
 
 	switch msg.ID {
 	case 0:
-		rlp.DecodeReceived(msg.Data, false)
+		decoded, err := rlp.DecodeReceived(msg.Data, false)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
+		fmt.Println("Received PING:", decoded)
 		sendPong()
 
 	case 1:
-		rlp.DecodeReceived(msg.Data, false)
+		decoded, err := rlp.DecodeReceived(msg.Data, false)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
+		fmt.Println("Received PONG:", decoded)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -132,11 +142,21 @@ func streamHandler(s network.Stream) {
 }
 
 func sendPing() {
-	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: rlp.EncodeData("PING", false)})
+	data, err := rlp.EncodeData("PING", false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: data})
 }
 
 func sendPong() {
-	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: rlp.EncodeData("PONG", false)})
+	data, err := rlp.EncodeData("PONG", false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: data})
 }
 
 type message struct {
