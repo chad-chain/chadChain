@@ -110,21 +110,13 @@ func streamHandler(s network.Stream) {
 		return
 	}
 
-	fmt.Println("Received message:\n",
-		"\nID:", msg.ID,
-		"\nCode:", msg.Code,
-		"\nWant:", msg.Want,
-		"\nData:", msg.Data,
-	)
-
 	switch msg.ID {
 	case 0:
-		send(s, msg)
-		fmt.Println("Sent Hello message to", s.Conn().RemoteMultiaddr().String())
+		DecodeReceived(msg.Data, false)
+		sendPong()
 
 	case 1:
-		x := ReceiveDecode(msg.Data, false)
-		fmt.Println("Received transaction:", x)
+		DecodeReceived(msg.Data, false)
 
 	case 2:
 		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
@@ -140,7 +132,15 @@ func streamHandler(s network.Stream) {
 	}
 }
 
-func ReceiveDecode(base64Str any, isJson bool) interface{} {
+func sendPing() {
+	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: EncodeData("PING", false)})
+}
+
+func sendPong() {
+	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: EncodeData("PONG", false)})
+}
+
+func DecodeReceived(base64Str any, isJson bool) interface{} {
 
 	decoded, err := base64.StdEncoding.DecodeString(base64Str.(string)) // Decode the base64 string
 	if err != nil {
@@ -151,7 +151,7 @@ func ReceiveDecode(base64Str any, isJson bool) interface{} {
 	var data string
 
 	if err := rlp.DecodeBytes(decoded, &data); err != nil {
-		fmt.Println("Error decoding transaction:", err)
+		fmt.Println("Error decoding :", err)
 		fmt.Printf("Decoded bytes: %v\n", decoded)
 		return nil
 	}
@@ -159,29 +159,36 @@ func ReceiveDecode(base64Str any, isJson bool) interface{} {
 	if isJson {
 		var finalData interface{}
 		json.Unmarshal([]byte(data), &finalData)
-		fmt.Println("Received transaction:", finalData)
+		fmt.Println("Received decoded:", finalData)
 		return finalData
 	}
 
-	fmt.Println("Received transaction:", data)
+	fmt.Println("Received decoded:", data)
 	return data
 }
 
-func SendTransaction(tr interface{}) {
-	data, err := rlp.EncodeToBytes(tr)
-	if err != nil {
-		fmt.Println("Error encoding transaction:", err)
-		return
+func EncodeData(data interface{}, isJson bool) []byte {
+	var err error
+	if isJson {
+		data, err = json.Marshal(data)
+		if err != nil {
+			fmt.Println("Error json marshaling :", err)
+			return nil
+		}
 	}
-	fmt.Println("Sent transaction:", data)
-	sendToAllPeers(message{ID: 1, Code: 1, Want: 1, Data: data})
+	encodedData, err := rlp.EncodeToBytes(data)
+	if err != nil {
+		fmt.Println("Error encoding :", err)
+		return nil
+	}
+	return encodedData
 }
 
 type message struct {
-	ID   uint64      `json:"id"`
-	Code int         `json:"code"`
-	Want int         `json:"want"`
-	Data interface{} `json:"data"`
+	ID   uint64 `json:"id"`
+	Code int    `json:"code"`
+	Want int    `json:"want"`
+	Data []byte `json:"data"`
 }
 
 func Run() {
@@ -204,7 +211,9 @@ func Run() {
 		}
 		fmt.Println("Connected to peer:", addr)
 	}
-	SendTransaction("Hello")
+
+	sendPing()
+
 	hostVar.SetStreamHandler("/", streamHandler)
 
 	sigCh := make(chan os.Signal)
