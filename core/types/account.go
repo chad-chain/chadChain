@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
@@ -65,6 +66,7 @@ func (ac *Account) AddAccount() (string, string, error) {
 	err = s.BadgerDB.Update(func(tx *badger.Txn) error {
 		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
 		if err != nil {
+			fmt.Println("error updating latest block hash: ", err.Error())
 			if err == badger.ErrKeyNotFound {
 				err = s.Insert([]byte("stateRootHash"), StateRootHash)(tx)
 				if err != nil {
