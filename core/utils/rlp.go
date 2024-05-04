@@ -3,15 +3,26 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-func DecodeReceived(endoded any, isJson bool) (interface{}, error) {
+func DecodeReceived(encoded any, isJson bool) (interface{}, error) {
 
 	var data string
 
-	if err := rlp.DecodeBytes(endoded.([]byte), &data); err != nil {
+	var encodedByte []byte
+
+	if reflect.TypeOf(encoded).Kind() == reflect.Slice {
+		encodedByte = encoded.([]byte)
+	} else if reflect.TypeOf(encoded).Kind() == reflect.String {
+		encodedByte = encoded.([]byte)
+	} else {
+		return nil, fmt.Errorf("error decoding RLP bytes: %v", "Invalid type")
+	}
+
+	if err := rlp.DecodeBytes(encodedByte, &data); err != nil {
 		return nil, fmt.Errorf("error decoding RLP bytes: %v", err)
 	}
 
