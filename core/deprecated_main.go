@@ -71,18 +71,18 @@ func TestMineBlock() {
 		S:     new(big.Int).SetInt64(79652),
 	}
 
-	transactionpool := &t.Transactionpool{
+	transactionPool := &t.TransactionPool{
 		Transactions: []t.Transaction{dummyTransaction, dummyTransaction1},
 	}
-	log.Default().Println("transactionpool size : ", len(transactionpool.Transactions))
+	log.Default().Println("transactionPool size : ", len(transactionPool.Transactions))
 
 	// Call the MineBlock function
-	// minedBlock, err := m.MineBlock(header, transactionpool)
+	// minedBlock, err := m.MineBlock(header, transactionPool)
 
 	// if err != nil {
 	// 	log.Default().Println("Mining failed: ", err)
 	// }
-	// log.Default().Println("transactionpool size : ", len(transactionpool.Transactions))
+	// log.Default().Println("transactionPool size : ", len(transactionPool.Transactions))
 
 	// dummyTransaction2 := t.Transaction{
 	// 	To:    [20]byte{},
@@ -93,11 +93,11 @@ func TestMineBlock() {
 	// 	S:     new(big.Int).SetInt64(7563652),
 	// }
 
-	// transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction2)
-	// transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction1)
-	// transactionpool.Transactions = append(transactionpool.Transactions, dummyTransaction)
+	// transactionPool.Transactions = append(transactionPool.Transactions, dummyTransaction2)
+	// transactionPool.Transactions = append(transactionPool.Transactions, dummyTransaction1)
+	// transactionPool.Transactions = append(transactionPool.Transactions, dummyTransaction)
 
-	// transactionpool.RemoveCommonTransactions(minedBlock.Transactions)
+	// transactionPool.RemoveCommonTransactions(minedBlock.Transactions)
 
 	// Add more assertions as needed
 }

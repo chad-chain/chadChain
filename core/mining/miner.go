@@ -7,10 +7,10 @@ import (
 	t "github.com/malay44/chadChain/core/types"
 )
 
-func BuildBlock(chn chan t.Block, transactionpool *t.Transactionpool, Miner [20]byte) (t.Block, error) {
+func BuildBlock(chn chan t.Block, transactionPool *t.TransactionPool, Miner [20]byte) (t.Block, error) {
 	log.Default().Println("Building Block Function")
 	timestamp := time.Now().Unix()
-	transactionroot, err := t.EncodeTransactions(transactionpool.Get_all_transactions_and_clear())
+	transactionRoot, err := t.EncodeTransactions(transactionPool.Get_all_transactions_and_clear())
 
 	if err != nil {
 		log.Default().Println("Error in encoding transaction")
@@ -24,18 +24,18 @@ func BuildBlock(chn chan t.Block, transactionpool *t.Transactionpool, Miner [20]
 		return *emptyBlock, err
 	}
 
-	transactionrootBytes := [32]byte{}
-	copy(transactionrootBytes[:], transactionroot)
+	transactionRootBytes := [32]byte{}
+	copy(transactionRootBytes[:], transactionRoot)
 
 	header := new(t.Header)
 	header.ParentHash = t.GetParentHash()
 	header.Miner = Miner
 	// header.StateRoot = [32]byte(t.StateRootHash)
-	header.TransactionsRoot = transactionrootBytes
+	header.TransactionsRoot = transactionRootBytes
 	header.Number = t.GetParentBlockHeight() + 1
 	header.Timestamp = uint64(timestamp)
 
-	b := t.CreateBlock(*header, transactionpool.Get_all_transactions_and_clear())
+	b := t.CreateBlock(*header, transactionPool.Get_all_transactions_and_clear())
 	log.Default().Println("Block Created", b)
 	minedBlock, err := MineBlock(b)
 	if err != nil {
@@ -55,13 +55,13 @@ func BuildBlock(chn chan t.Block, transactionpool *t.Transactionpool, Miner [20]
 
 func MineBlock(b t.Block) (t.Block, error) {
 	log.Default().Println("Mining Started")
-	encodded_block, err := t.EncodeBlock(b)
+	encoded_block, err := t.EncodeBlock(b)
 	if err != nil {
 		log.Default().Println("Error in encoding block")
 		return b, err
 	}
-	log.Default().Println("Block Hash: ", encodded_block)
-	generated_hash := t.Keccak256(encodded_block)
+	log.Default().Println("Block Hash: ", encoded_block)
+	generated_hash := t.Keccak256(encoded_block)
 	log.Default().Println("Generated Hash: ", generated_hash)
 	log.Default().Println("Block mined", b)
 	return b, nil

@@ -99,6 +99,11 @@ func DecodeBlock(data []byte) (Block, error) {
 	}, nil
 }
 
+func GetParentBlock() Block {
+	// get parent block
+	return Block{}
+}
+
 // Get Parent Block Height
 func GetParentBlockHeight() uint64 {
 	// get parent block height

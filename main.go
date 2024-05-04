@@ -61,7 +61,7 @@ func main() {
 	go Timer(timerCh, n.PeerAddrs)
 	log.Default().Println("Both Chanells Created")
 
-	transactionpool := t.Transactionpool{}
+	transactionPool := t.TransactionPool{}
 	for {
 		select {
 		case miner := <-timerCh:
@@ -69,7 +69,7 @@ func main() {
 			// var minerinByte [20]byte
 			// copy(minerinByte[:], []byte(miner))
 
-			go m.BuildBlock(chn, &transactionpool, [20]byte{})
+			go m.BuildBlock(chn, &transactionPool, [20]byte{})
 		case blk := <-chn:
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
