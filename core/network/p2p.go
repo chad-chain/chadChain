@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -24,24 +25,28 @@ var (
 )
 
 func setupHost() (host.Host, error) {
-	// Hex := os.Getenv("PRIV_HEX")
+	Hex := os.Getenv("PRIV_HEX")
 
-	// fmt.Println("Hex:", Hex)
-	// // Decode hex string to bytes
-	// privBytes, err := hex.DecodeString(Hex)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	fmt.Println("Hex:", Hex)
+	// Decode hex string to bytes
+	privBytes, err := hex.DecodeString(Hex)
+	if err != nil {
+		panic(err)
+	}
 
-	// // Parse bytes into a private key
-	// privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// Parse bytes into a private key
+	privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
+	if err != nil {
+		panic(err)
+	}
 
-	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
+	// priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
 
-	host, err := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	println("Private Key:", privKey)
+	if err != nil {
+		return nil, err
+	}
+	host, err := libp2p.New(libp2p.Identity(privKey), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/3000"))
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +114,8 @@ func streamHandler(s network.Stream) {
 		return
 	}
 
+	senderID := s.Conn().RemotePeer()
+
 	switch msg.ID {
 	case 0:
 		decoded, err := rlp.DecodeReceived(msg.Data, false)
@@ -117,7 +124,7 @@ func streamHandler(s network.Stream) {
 			return
 		}
 		fmt.Println("Received PING:", decoded)
-		sendPong()
+		sendPongToPeer(senderID)
 
 	case 1:
 		decoded, err := rlp.DecodeReceived(msg.Data, false)
@@ -150,13 +157,26 @@ func sendPing() {
 	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: data})
 }
 
-func sendPong() {
+func sendPongToPeer(peerID peer.ID) {
 	data, err := rlp.EncodeData("PONG", false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
 	}
-	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: data})
+
+	// Create a new stream to the peer
+	s, err := hostVar.NewStream(CtxVar, peerID, "/")
+	if err != nil {
+		fmt.Println("Error creating stream:", err)
+		return
+	}
+	defer s.Close() // Close the stream when done
+
+	// Send PONG message
+	encoder := json.NewEncoder(s)
+	if err := encoder.Encode(message{ID: 1, Code: 0, Want: 0, Data: data}); err != nil {
+		fmt.Println("Error encoding message:", err)
+	}
 }
 
 type message struct {
