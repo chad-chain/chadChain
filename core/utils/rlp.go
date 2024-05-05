@@ -7,6 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
+// DecodeData decodes the data into the entity
+// Entity should be a pointer to the struct to which the data should be decoded
 func DecodeData(data []byte, entity interface{}) error {
 	err := rlp.DecodeBytes(data, entity)
 	if err != nil {
