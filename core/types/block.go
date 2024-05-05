@@ -49,7 +49,8 @@ func (b *Block) AddBlockToChain() error {
 		if err != nil {
 			return fmt.Errorf("error inserting block into db: %v", err)
 		}
-		err = db.Update([]byte("latestBlock"), hash)(txn)
+		// Update the latest block in the db
+		err = db.Update([]byte("latestBlock"), b)(txn)
 		if err != nil {
 			fmt.Printf("error updating latest block hash: %v", err)
 			if err == badger.ErrKeyNotFound {
@@ -63,8 +64,9 @@ func (b *Block) AddBlockToChain() error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("error adding block to chain: %v", err)
+		return fmt.Errorf("error adding block to DB: %v", err)
 	}
+
 	return nil
 }
 
