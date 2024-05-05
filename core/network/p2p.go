@@ -126,33 +126,27 @@ func streamHandler(s network.Stream) {
 
 	senderID := s.Conn().RemotePeer()
 
+	err := rlp.DecodeData(msg.Data, &decodedData)
+	if err != nil {
+		fmt.Println("Error decoding data:", err)
+		return
+	}
+
 	switch msg.ID {
 	case 0:
-		err := rlp.DecodeData(msg.Data, &decodedData)
-		if err != nil {
-			fmt.Println("Error decoding data:", err)
-			return
-		}
+		fmt.Println("Received PING: ", string(decodedData))
 		if string(decodedData) == "PING" {
-			fmt.Println("Received: PING")
 			sendPongToPeer(senderID)
-		} else {
-			fmt.Println("Received:", string(decodedData))
 		}
 
 	case 1:
-		err := rlp.DecodeData(msg.Data, &decodedData)
-		if err != nil {
-			fmt.Println("Error decoding data:", err)
-			return
-		}
 		fmt.Println("Received PONG:", string(decodedData))
 
 	case 2:
-		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
+		Address(string(decodedData))
 
 	case 3:
-		fmt.Println("Request: List of block numbers (upto 10 max) Response (expected): Encoded version of a list of asked blocks")
+		ReceiveAddress(string(decodedData))
 
 	case 4:
 		fmt.Println("Request (to which this response should be made): List of block numbers (upto 10 max) Response: Encoded version of a list of asked blocks")
@@ -160,6 +154,30 @@ func streamHandler(s network.Stream) {
 	default:
 		fmt.Println("ERR", msg)
 	}
+}
+
+func Address(receivedAddress string) {
+	// PeerAddrs = append(PeerAddrs, receivedAddress)
+	fmt.Println("Address Received: ", receivedAddress)
+	data, err := rlp.EncodeData(hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String(), false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 3, Code: 0, Want: 0, Data: data})
+}
+
+func SendAddress(addr string) {
+	data, err := rlp.EncodeData(addr, false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 2, Code: 0, Want: 3, Data: data})
+}
+
+func ReceiveAddress(addr string) {
+	fmt.Println("address Received: ", addr)
 }
 
 func sendPing() {
