@@ -2,6 +2,9 @@ package types
 
 import (
 	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -13,15 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
-
-func Keccak256(data ...[]byte) []byte {
-	hashState := sha3.NewLegacyKeccak256()
-	for _, input := range data {
-		hashState.Write(input)
-	}
-
-	return hashState.Sum(nil)
-}
 
 type Tx struct {
 	To    [20]byte
@@ -36,7 +30,35 @@ type SignedTx struct {
 	V, R, S *big.Int // signature values
 }
 
-// signing over header and verifying it
+func Keccak256(data ...[]byte) []byte {
+	hashState := sha3.NewLegacyKeccak256()
+	for _, input := range data {
+		hashState.Write(input)
+	}
+
+	return hashState.Sum(nil)
+}
+
+func generateRandomKey() (*ecdsa.PrivateKey, error) {
+	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+}
+
+func privateKeyToAddress(privateKey *ecdsa.PrivateKey) common.Address {
+	return crypto.PubkeyToAddress(privateKey.PublicKey)
+}
+
+func privateKeyToHex(privateKey *ecdsa.PrivateKey) string {
+	return hex.EncodeToString(crypto.FromECDSA(privateKey))
+}
+
+func generateKeyPair() (*ecdsa.PrivateKey, common.Address, error) {
+	privateKey, err := generateRandomKey()
+	if err != nil {
+		return nil, common.Address{}, err
+	}
+	address := privateKeyToAddress(privateKey)
+	return privateKey, address, nil
+}
 
 func SignTransaction(tx *Tx, privateKey *ecdsa.PrivateKey) (SignedTx, error) {
 	h := Hash(tx)
@@ -55,6 +77,47 @@ func SignTransaction(tx *Tx, privateKey *ecdsa.PrivateKey) (SignedTx, error) {
 		S:     S,
 	}
 	return signedTx, nil
+}
+
+func VerifyTxSignature(tx *Tx, signedTx *SignedTx, publicKey *ecdsa.PublicKey) bool {
+	h := Hash(tx)
+	return ecdsa.Verify(publicKey, h.Bytes(), signedTx.R, signedTx.S)
+}
+
+// SealHash returns the hash of a block prior to it being sealed.
+func SealHash(header *Header) (hash common.Hash) {
+	hasher := sha3.NewLegacyKeccak256()
+	encodeHeader(hasher, header)
+	hasher.Sum(hash[:0])
+
+	return hash
+}
+
+func SignHeader(header *Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+	sig, err := crypto.Sign(SealHash(header).Bytes(), privateKey)
+	if err != nil {
+		return nil, err
+	}
+	header.ExtraData = sig
+	return sig, nil
+}
+
+func VerifyHeaderSignature(header *Header, publicKey *ecdsa.PublicKey) bool {
+	r := new(big.Int).SetBytes(header.ExtraData[:32])
+	s := new(big.Int).SetBytes(header.ExtraData[32:])
+	return ecdsa.Verify(publicKey, SealHash(header).Bytes(), r, s)
+}
+
+// decodeSignature decodes the signature into v, r, and s values
+func decodeSignature(sig []byte) (r, s, v *big.Int) {
+
+	if len(sig) != crypto.SignatureLength {
+		panic(fmt.Sprintf("wrong size for signature: got %d, want %d", len(sig), crypto.SignatureLength))
+	}
+	r = new(big.Int).SetBytes(sig[:32])
+	s = new(big.Int).SetBytes(sig[32:64])
+	v = new(big.Int).SetBytes([]byte{sig[64] + 27})
+	return r, s, v
 }
 
 // recoverPlain recovers the address which has signed the given data using the v, r, and s values
@@ -87,18 +150,6 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	return addr, nil
 }
 
-// decodeSignature decodes the signature into v, r, and s values
-func decodeSignature(sig []byte) (r, s, v *big.Int) {
-
-	if len(sig) != crypto.SignatureLength {
-		panic(fmt.Sprintf("wrong size for signature: got %d, want %d", len(sig), crypto.SignatureLength))
-	}
-	r = new(big.Int).SetBytes(sig[:32])
-	s = new(big.Int).SetBytes(sig[32:64])
-	v = new(big.Int).SetBytes([]byte{sig[64] + 27})
-	return r, s, v
-}
-
 // This is not transaction hash. This is only used for generating signatures
 func Hash(tx *Tx) common.Hash {
 	return rlpHash([]interface{}{
@@ -122,15 +173,6 @@ func rlpHash(x interface{}) (h common.Hash) {
 	sha.Read(h[:])
 
 	return h
-}
-
-// SealHash returns the hash of a block prior to it being sealed.
-func SealHash(header *Header) (hash common.Hash) {
-	hasher := sha3.NewLegacyKeccak256()
-	encodeHeader(hasher, header)
-	hasher.Sum(hash[:0])
-
-	return hash
 }
 
 func encodeHeader(w io.Writer, header *Header) {

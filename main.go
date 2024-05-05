@@ -1,39 +1,35 @@
 package main
 
 import (
-	"context"
 	"log"
 	"time"
 
-	"github.com/joho/godotenv"
-	initialize "github.com/malay44/chadChain/core/initialize"
 	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
-	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
 	// n.Http()
-	db.InitBadger()
-	defer db.BadgerDB.Close()
-	initialize.GlobalDBVar()
+	// db.InitBadger()
+	// defer db.BadgerDB.Close()
+	// initialize.GlobalDBVar()
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	n.PeerAddrs = []string{
-		"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
-		"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
-	}
+	// err := godotenv.Load(".env")
+	// if err != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
 	// n.PeerAddrs = []string{
-	// 	"12D3KooWPot5PSrTg6K",
-	// 	"12D3KooWPot5PSrTg6K",
-	// 	"12D3KooWPot5PSrTg6K"}
+	// 	"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
+	// 	"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
+	// }
+	n.PeerAddrs = []string{
+		"12D3KooWPot5PSrTg6K",
+		"12D3KooWPot5PSrTg6K",
+		"12D3KooWPot5PSrTg6K"}
 
-	n.CtxVar = context.Background()
-	n.Run()
+	// n.CtxVar = context.Background()
+	// n.Run()
 
 	// bbc := t.Block{}
 	// bbch := t.Header{}

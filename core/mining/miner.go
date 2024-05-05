@@ -11,7 +11,7 @@ import (
 func BuildBlock(chn chan t.Block, transactionPool *t.TransactionPool, Miner [20]byte) (t.Block, error) {
 	log.Default().Println("Building Block Function")
 	timestamp := time.Now().Unix()
-	transactionroot, err := rlp.EncodeData(transactionpool.Get_all_transactions_and_clear(), false)
+	transactionroot, err := rlp.EncodeData(transactionPool.Get_all_transactions_and_clear(), false)
 
 	if err != nil {
 		log.Default().Println("Error in encoding transaction")
@@ -26,7 +26,7 @@ func BuildBlock(chn chan t.Block, transactionPool *t.TransactionPool, Miner [20]
 	}
 
 	transactionRootBytes := [32]byte{}
-	copy(transactionRootBytes[:], transactionRoot)
+	copy(transactionRootBytes[:], transactionroot)
 
 	header := new(t.Header)
 	header.ParentHash = t.GetParentHash()
@@ -61,8 +61,8 @@ func MineBlock(b t.Block) (t.Block, error) {
 		log.Default().Println("Error in encoding block")
 		return b, err
 	}
-	log.Default().Println("Block Hash: ", encoded_block)
-	generated_hash := t.Keccak256(encoded_block)
+	log.Default().Println("Block Hash: ", encodded_block)
+	generated_hash := t.Keccak256(encodded_block)
 	log.Default().Println("Generated Hash: ", generated_hash)
 	log.Default().Println("Block mined", b)
 	return b, nil
