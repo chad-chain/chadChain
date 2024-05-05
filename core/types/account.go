@@ -5,20 +5,21 @@ import (
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/ethereum/go-ethereum/common"
 	s "github.com/malay44/chadChain/core/storage"
 	rlp "github.com/malay44/chadChain/core/utils"
 )
 
 type Account struct {
-	Address [32]byte // The address of the account
-	Nonce   uint64   // The nonce of the account
-	Balance uint64   // The balance of the account
+	Address common.Address // The address of the account
+	Nonce   uint64         // The nonce of the account
+	Balance uint64         // The balance of the account
 }
 
 // State root hash
 var StateRootHash []byte
 
-func (ac *Account) CreateAccount(address [32]byte, nonce uint64, balance uint64) Account {
+func (ac *Account) CreateAccount(address common.Address, nonce uint64, balance uint64) Account {
 	return Account{address, nonce, balance}
 }
 
@@ -89,12 +90,12 @@ func (ac *Account) AddAccount() (string, string, error) {
 }
 
 // Get account from db
-func GetAccount(address string) (Account, error) {
+func GetAccount(address common.Address) (Account, error) {
 	// create keys for account and its hash
-	accKey := "account"
+	accKey := append([]byte("account"), address.Bytes()...)
 	acc := Account{}
 	err := s.BadgerDB.View(func(tx *badger.Txn) error {
-		err := s.Get([]byte(accKey+address), &acc)(tx)
+		err := s.Get([]byte(accKey), &acc)(tx)
 		return err
 	})
 
