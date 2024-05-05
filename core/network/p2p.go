@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	t "github.com/malay44/chadChain/core/types"
 	rlp "github.com/malay44/chadChain/core/utils"
 	"github.com/multiformats/go-multiaddr"
 )
@@ -151,9 +152,31 @@ func streamHandler(s network.Stream) {
 	case 4:
 		fmt.Println("Request (to which this response should be made): List of block numbers (upto 10 max) Response: Encoded version of a list of asked blocks")
 
+	case 5:
+		block := t.Block{}
+		err := rlp.DecodeData(decodedData, &block)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
+		ReceiveBlock(block)
+
 	default:
 		fmt.Println("ERR", msg)
 	}
+}
+
+func SendBlock(block t.Block) {
+	data, err := rlp.EncodeData(block, true)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 5, Code: 0, Want: 0, Data: data})
+}
+
+func ReceiveBlock(block t.Block) {
+	fmt.Println("Received Block: ", block)
 }
 
 func Address(receivedAddress string) {
