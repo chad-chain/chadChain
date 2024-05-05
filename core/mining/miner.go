@@ -5,12 +5,13 @@ import (
 	"time"
 
 	t "github.com/malay44/chadChain/core/types"
+	rlp "github.com/malay44/chadChain/core/utils"
 )
 
 func BuildBlock(chn chan t.Block, transactionpool *t.Transactionpool, Miner [20]byte) (t.Block, error) {
 	log.Default().Println("Building Block Function")
 	timestamp := time.Now().Unix()
-	transactionroot, err := t.EncodeTransactions(transactionpool.Get_all_transactions_and_clear())
+	transactionroot, err := rlp.EncodeData(transactionpool.Get_all_transactions_and_clear(), false)
 
 	if err != nil {
 		log.Default().Println("Error in encoding transaction")
@@ -46,7 +47,7 @@ func BuildBlock(chn chan t.Block, transactionpool *t.Transactionpool, Miner [20]
 		emptyBlock.Header.TransactionsRoot = [32]byte(t.GetParentBlockTransactionsRoot())
 		emptyBlock.Header.Number = t.GetParentBlockHeight() + 1
 		emptyBlock.Header.Timestamp = uint64(timestamp)
-
+		emptyBlock.Header.Miner = Miner
 		return *emptyBlock, err
 	}
 	chn <- minedBlock
@@ -55,7 +56,7 @@ func BuildBlock(chn chan t.Block, transactionpool *t.Transactionpool, Miner [20]
 
 func MineBlock(b t.Block) (t.Block, error) {
 	log.Default().Println("Mining Started")
-	encodded_block, err := t.EncodeBlock(b)
+	encodded_block, err := rlp.EncodeData(b, false)
 	if err != nil {
 		log.Default().Println("Error in encoding block")
 		return b, err
