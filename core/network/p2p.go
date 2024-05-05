@@ -13,6 +13,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	t "github.com/malay44/chadChain/core/types"
 	rlp "github.com/malay44/chadChain/core/utils"
 	"github.com/multiformats/go-multiaddr"
 )
@@ -26,7 +27,6 @@ var (
 func setupHost() (host.Host, error) {
 	// Hex := os.Getenv("PRIV_HEX")
 
-	// fmt.Println("Hex:", Hex)
 	// // Decode hex string to bytes
 	// privBytes, err := hex.DecodeString(Hex)
 	// if err != nil {
@@ -40,8 +40,11 @@ func setupHost() (host.Host, error) {
 	// }
 
 	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
+	if err != nil {
+		return nil, err
+	}
 
-	host, err := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
+	host, err := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0000"))
 	if err != nil {
 		return nil, err
 	}
@@ -69,9 +72,21 @@ func connectToPeer(addr string) error {
 	return nil
 }
 
+func checkForSelf(addr string) bool {
+	if addr == hostVar.Addrs()[1].String()+"/p2p/"+hostVar.ID().String() || addr == hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String() {
+		return true
+	}
+	return false
+}
+
 func sendToAllPeers(msg message) {
 
 	for _, p := range PeerAddrs {
+		if checkForSelf(p) {
+			println("Skipping self address")
+			continue
+		}
+
 		peerMA, err := multiaddr.NewMultiaddr(p)
 		if err != nil {
 			fmt.Println("Error creating multiaddr:", err)
@@ -103,42 +118,89 @@ func send(s network.Stream, msg message) {
 
 func streamHandler(s network.Stream) {
 	decoder := json.NewDecoder(s)
+	var decodedData []byte
 	var msg message
 	if err := decoder.Decode(&msg); err != nil {
 		fmt.Println("Error decoding message:", err)
 		return
 	}
 
+	senderID := s.Conn().RemotePeer()
+
+	err := rlp.DecodeData(msg.Data, &decodedData)
+	if err != nil {
+		fmt.Println("Error decoding data:", err)
+		return
+	}
+
 	switch msg.ID {
 	case 0:
-		decoded, err := rlp.DecodeReceived(msg.Data, false)
-		if err != nil {
-			fmt.Println("Error decoding data:", err)
-			return
+		fmt.Println("Received PING: ", string(decodedData))
+		if string(decodedData) == "PING" {
+			sendPongToPeer(senderID)
 		}
-		fmt.Println("Received PING:", decoded)
-		sendPong()
 
 	case 1:
-		decoded, err := rlp.DecodeReceived(msg.Data, false)
-		if err != nil {
-			fmt.Println("Error decoding data:", err)
-			return
-		}
-		fmt.Println("Received PONG:", decoded)
+		fmt.Println("Received PONG:", string(decodedData))
 
 	case 2:
-		fmt.Println("Received block. Response: Response: Encoded version of a single block (which was just mined)")
+		Address(string(decodedData))
 
 	case 3:
-		fmt.Println("Request: List of block numbers (upto 10 max) Response (expected): Encoded version of a list of asked blocks")
+		ReceiveAddress(string(decodedData))
 
 	case 4:
 		fmt.Println("Request (to which this response should be made): List of block numbers (upto 10 max) Response: Encoded version of a list of asked blocks")
 
+	case 5:
+		block := t.Block{}
+		err := rlp.DecodeData(decodedData, &block)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
+		ReceiveBlock(block)
+
 	default:
 		fmt.Println("ERR", msg)
 	}
+}
+
+func SendBlock(block t.Block) {
+	data, err := rlp.EncodeData(block, true)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 5, Code: 0, Want: 0, Data: data})
+}
+
+func ReceiveBlock(block t.Block) {
+	fmt.Println("Received Block: ", block)
+}
+
+func Address(receivedAddress string) {
+	// PeerAddrs = append(PeerAddrs, receivedAddress)
+	fmt.Println("Address Received: ", receivedAddress)
+	data, err := rlp.EncodeData(hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String(), false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 3, Code: 0, Want: 0, Data: data})
+}
+
+func SendAddress(addr string) {
+	data, err := rlp.EncodeData(addr, false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 2, Code: 0, Want: 3, Data: data})
+}
+
+func ReceiveAddress(addr string) {
+	fmt.Println("address Received: ", addr)
 }
 
 func sendPing() {
@@ -150,13 +212,27 @@ func sendPing() {
 	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: data})
 }
 
-func sendPong() {
+func sendPongToPeer(peerID peer.ID) {
+
 	data, err := rlp.EncodeData("PONG", false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
 	}
-	sendToAllPeers(message{ID: 1, Code: 0, Want: 0, Data: data})
+
+	// Create a new stream to the peer
+	s, err := hostVar.NewStream(CtxVar, peerID, "/")
+	if err != nil {
+		fmt.Println("Error creating stream:", err)
+		return
+	}
+	defer s.Close() // Close the stream when done
+
+	// Send PONG message
+	encoder := json.NewEncoder(s)
+	if err := encoder.Encode(message{ID: 1, Code: 0, Want: 0, Data: data}); err != nil {
+		fmt.Println("Error encoding message:", err)
+	}
 }
 
 type message struct {
@@ -180,6 +256,10 @@ func Run() {
 	// fmt.Println("Peer_ADDR:", os.Getenv("PEER_ADDR"))
 
 	for _, addr := range PeerAddrs {
+		if checkForSelf(addr) {
+			println("Skipping self address")
+			continue
+		}
 		if err := connectToPeer(addr); err != nil {
 			fmt.Println("Error connecting to peer:", err)
 			continue

@@ -5,17 +5,17 @@ import (
 	"sync"
 )
 
-type Transactionpool struct {
+type TransactionPool struct {
 	Transactions []Transaction
 	mutex        sync.Mutex
 }
 
-func NewTransactionpool() *Transactionpool {
-	return &Transactionpool{}
+func NewTransactionPool() *TransactionPool {
+	return &TransactionPool{}
 }
 
 // Method to add a transaction to the transaction pool
-func (tp *Transactionpool) Add_transaction_to_transactionpool(tr Transaction) *Transactionpool {
+func (tp *TransactionPool) Add_transaction_to_transactionPool(tr Transaction) *TransactionPool {
 
 	tp.mutex.Lock()
 	defer tp.mutex.Unlock() // Ensure unlocking even if there's a panic
@@ -24,7 +24,7 @@ func (tp *Transactionpool) Add_transaction_to_transactionpool(tr Transaction) *T
 }
 
 // Method to get all transactions from the transaction pool and clear it
-func (tp *Transactionpool) Get_all_transactions_and_clear() []Transaction {
+func (tp *TransactionPool) Get_all_transactions_and_clear() []Transaction {
 
 	tp.mutex.Lock()
 	defer tp.mutex.Unlock()
@@ -37,7 +37,7 @@ func (tp *Transactionpool) Get_all_transactions_and_clear() []Transaction {
 	return transactions
 }
 
-func (tp *Transactionpool) Get_all_transactions() []Transaction {
+func (tp *TransactionPool) Get_all_transactions() []Transaction {
 
 	tp.mutex.Lock()
 	defer tp.mutex.Unlock()
@@ -50,15 +50,15 @@ func (tp *Transactionpool) Get_all_transactions() []Transaction {
 }
 
 // add list of transaction to transaction pool
-func (tp *Transactionpool) AddTransactions(transactions []Transaction) *Transactionpool {
+func (tp *TransactionPool) AddTransactions(transactions []Transaction) *TransactionPool {
 	tp.mutex.Lock()
 	defer tp.mutex.Unlock()
 	tp.Transactions = append(tp.Transactions, transactions...)
 	return tp
 }
 
-// clear transactionpool teansaction and add list of transactions
-func (tp *Transactionpool) ClearAndAddTransactions(transactions []Transaction) *Transactionpool {
+// clear transactionPool teansaction and add list of transactions
+func (tp *TransactionPool) ClearAndAddTransactions(transactions []Transaction) *TransactionPool {
 	tp.mutex.Lock()
 	defer tp.mutex.Unlock()
 	tp.Transactions = nil
@@ -67,7 +67,7 @@ func (tp *Transactionpool) ClearAndAddTransactions(transactions []Transaction) *
 }
 
 // remove transaction from transaction pool which are in the valid block
-func (tp *Transactionpool) RemoveCommonTransactions(transactions []Transaction) *Transactionpool {
+func (tp *TransactionPool) RemoveCommonTransactions(transactions []Transaction) *TransactionPool {
 
 	transactionsFromPool := tp.Get_all_transactions()
 	var updatedTransactions []Transaction

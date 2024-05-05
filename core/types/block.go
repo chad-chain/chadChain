@@ -1,13 +1,20 @@
 package types
 
 import (
+	"fmt"
+
+	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/rlp"
+	db "github.com/malay44/chadChain/core/storage"
+	"github.com/malay44/chadChain/core/utils"
 )
 
 type Block struct {
 	Header       Header        // The header of the block containing metadata
 	Transactions []Transaction // List of transactions in the block
 }
+
+var LatestBlock Block
 
 // add single transaction to block
 func (b *Block) AddTransactionToBlock(t Transaction) {
@@ -29,8 +36,36 @@ func (b *Block) RemoveTransactionFromBlock(t Transaction) {
 }
 
 // Getting Validated Block from network
-func (b *Block) AddBlockToChain(blck Block) {
-	// sava block into chain
+func (b *Block) AddBlockToChain() error {
+	marshalledHeader, err := utils.EncodeData(b.Header, false)
+	hash := Keccak256(marshalledHeader)
+
+	if err != nil {
+		return fmt.Errorf("error encoding block header: %v", err)
+	}
+	key := []byte("block" + string(hash))
+	err = db.BadgerDB.Update(func(txn *badger.Txn) error {
+		err := db.Insert(key, *b)(txn)
+		if err != nil {
+			return fmt.Errorf("error inserting block into db: %v", err)
+		}
+		err = db.Update([]byte("latestBlock"), hash)(txn)
+		if err != nil {
+			fmt.Printf("error updating latest block hash: %v", err)
+			if err == badger.ErrKeyNotFound {
+				err = db.Insert([]byte("stateRootHash"), hash)(txn)
+				if err != nil {
+					return err
+				}
+			}
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error adding block to chain: %v", err)
+	}
+	return nil
 }
 
 // create block
@@ -97,6 +132,11 @@ func DecodeBlock(data []byte) (Block, error) {
 		Header:       decodedHeader,
 		Transactions: decodedTransactions,
 	}, nil
+}
+
+func GetParentBlock() Block {
+	// get parent block
+	return Block{}
 }
 
 // Get Parent Block Height

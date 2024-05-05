@@ -1,12 +1,12 @@
 package types
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/ethereum/go-ethereum/rlp"
 	s "github.com/malay44/chadChain/core/storage"
-	"github.com/vmihailenco/msgpack/v5"
+	rlp "github.com/malay44/chadChain/core/utils"
 )
 
 type Account struct {
@@ -31,12 +31,12 @@ func (ac *Account) AddAccount() (string, string, error) {
 	hashKey := "hash" + string(addrSlice)
 
 	// marshal account info to byte array and hash it
-	val, err := msgpack.Marshal(ac)
+	val, err := rlp.EncodeData(ac, false)
 	if err != nil {
 		return "", "", err
 	}
 	hash := Keccak256(val)
-	marshaledHash, err := msgpack.Marshal(hash)
+	marshaledHash, err := rlp.EncodeData(hash, false)
 	if err != nil {
 		return "", "", err
 	}
@@ -66,6 +66,13 @@ func (ac *Account) AddAccount() (string, string, error) {
 	err = s.BadgerDB.Update(func(tx *badger.Txn) error {
 		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
 		if err != nil {
+			fmt.Println("error updating state root hash: ", err.Error())
+			if err == badger.ErrKeyNotFound {
+				err = s.Insert([]byte("stateRootHash"), StateRootHash)(tx)
+				if err != nil {
+					return err
+				}
+			}
 			return err
 		}
 		return nil
@@ -129,20 +136,4 @@ func ComputeRootHash() ([]byte, error) {
 // send account over network
 func (ac *Account) SendAccount(Account Account) {
 	// propagate in the network
-}
-
-func EncodeAccount(account Account) ([]byte, error) {
-	encodedAccount, err := rlp.EncodeToBytes(account)
-	if err != nil {
-		return nil, err
-	}
-	return encodedAccount, nil
-}
-
-func DecodeAccount(data []byte) (Account, error) {
-	var account Account
-	if err := rlp.DecodeBytes(data, &account); err != nil {
-		return account, err
-	}
-	return account, nil
 }

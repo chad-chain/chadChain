@@ -1,29 +1,39 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 
+	"github.com/joho/godotenv"
+	initialize "github.com/malay44/chadChain/core/initialize"
 	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
+	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
 )
 
 func main() {
 	// n.Http()
-	// n.PeerAddrs = []string{
-	// 	// "/ip4/127.0.0.1/tcp/64561/p2p/12D3KooWPot5PSrTg6KQA5VChBzTs6GSoNgfnPzXtkWdKQ8wFAxQ",
-	// }
-	n.PeerAddrs = []string{
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K"}
+	db.InitBadger()
+	defer db.BadgerDB.Close()
+	initialize.GlobalDBVar()
 
-	// n.CtxVar = context.Background()
-	// n.Run()
-	// db.InitBadger()
-	// defer db.BadgerDB.Close()
-	// initGlobalVar()
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	n.PeerAddrs = []string{
+		"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
+		"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
+	}
+	// n.PeerAddrs = []string{
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K"}
+
+	n.CtxVar = context.Background()
+	n.Run()
 
 	// bbc := t.Block{}
 	// bbch := t.Header{}
@@ -60,7 +70,7 @@ func miningInit() {
 	go Timer(timerCh, n.PeerAddrs)
 	log.Default().Println("Both Chanells Created")
 
-	transactionpool := t.Transactionpool{}
+	transactionPool := t.TransactionPool{}
 	for {
 		select {
 		case miner := <-timerCh:
@@ -68,7 +78,7 @@ func miningInit() {
 			// var minerinByte [20]byte
 			// copy(minerinByte[:], []byte(miner))
 
-			go m.BuildBlock(chn, &transactionpool, [20]byte{})
+			go m.BuildBlock(chn, &transactionPool, [20]byte{})
 		case blk := <-chn:
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
