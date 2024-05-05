@@ -2,12 +2,11 @@ package types
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/big"
 	"sync"
 
@@ -16,19 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
-
-type Tx struct {
-	To    [20]byte
-	Value uint64
-	Nonce uint64
-}
-
-type SignedTx struct {
-	To      [20]byte
-	Value   uint64
-	Nonce   uint64
-	V, R, S *big.Int // signature values
-}
 
 func Keccak256(data ...[]byte) []byte {
 	hashState := sha3.NewLegacyKeccak256()
@@ -39,28 +25,17 @@ func Keccak256(data ...[]byte) []byte {
 	return hashState.Sum(nil)
 }
 
-func generateRandomKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-}
-
-func privateKeyToAddress(privateKey *ecdsa.PrivateKey) common.Address {
-	return crypto.PubkeyToAddress(privateKey.PublicKey)
-}
-
-func privateKeyToHex(privateKey *ecdsa.PrivateKey) string {
-	return hex.EncodeToString(crypto.FromECDSA(privateKey))
-}
-
-func generateKeyPair() (*ecdsa.PrivateKey, common.Address, error) {
-	privateKey, err := generateRandomKey()
+func GenerateNewPrivateKey() (*ecdsa.PrivateKey, string, common.Address, error) {
+	privateKey, err := crypto.GenerateKey()
 	if err != nil {
-		return nil, common.Address{}, err
+		return nil, "", common.Address{}, err
 	}
-	address := privateKeyToAddress(privateKey)
-	return privateKey, address, nil
+	address := crypto.PubkeyToAddress(privateKey.PublicKey)
+	privateKeyHex := hex.EncodeToString(crypto.FromECDSA(privateKey))
+	return privateKey, privateKeyHex, address, nil
 }
 
-func SignTransaction(tx *Tx, privateKey *ecdsa.PrivateKey) (SignedTx, error) {
+func SignTransaction(tx *UnSignedTx, privateKey *ecdsa.PrivateKey) (Transaction, error) {
 	h := Hash(tx)
 	sig, err := crypto.Sign(h[:], privateKey)
 	if err != nil {
@@ -68,7 +43,7 @@ func SignTransaction(tx *Tx, privateKey *ecdsa.PrivateKey) (SignedTx, error) {
 	}
 	R, S, V := decodeSignature(sig)
 	// Create a signed transaction by V, R, S values
-	signedTx := SignedTx{
+	signedTx := Transaction{
 		To:    tx.To,
 		Value: tx.Value,
 		Nonce: tx.Nonce,
@@ -79,13 +54,55 @@ func SignTransaction(tx *Tx, privateKey *ecdsa.PrivateKey) (SignedTx, error) {
 	return signedTx, nil
 }
 
-func VerifyTxSignature(tx *Tx, signedTx *SignedTx, publicKey *ecdsa.PublicKey) bool {
-	h := Hash(tx)
-	return ecdsa.Verify(publicKey, h.Bytes(), signedTx.R, signedTx.S)
+func VerifySign(t *Transaction) (common.Address, error) {
+	UnSignedTx := UnSignedTx{
+		To:    t.To,
+		Value: t.Value,
+		Nonce: t.Nonce,
+	}
+	sender, err := recoverPlain(Hash(&UnSignedTx), t.R, t.S, t.V, true)
+	if err != nil {
+		return common.Address{}, err
+	}
+	return sender, nil
 }
 
-// SealHash returns the hash of a block prior to it being sealed.
-func SealHash(header *Header) (hash common.Hash) {
+func VerifyTx(tx *Transaction) bool {
+	UnSignedTx := UnSignedTx{
+		To:    tx.To,
+		Value: tx.Value,
+		Nonce: tx.Nonce,
+	}
+	sender, err := recoverPlain(Hash(&UnSignedTx), tx.R, tx.S, tx.V, true)
+	if err != nil {
+		log.Default().Println("Failed to recover sender:", err)
+		return false
+	}
+
+	acc, err := GetAccount(sender)
+	if err != nil {
+		log.Default().Println("Failed to get account:", err)
+		return false
+	}
+
+	if acc.Balance < tx.Value {
+		log.Default().Println("Insufficient balance")
+		log.Default().Println("Tx:", tx)
+		log.Default().Println("Sender:", BytesToHexString(sender[:]))
+		return false
+	}
+
+	log.Default().Println("Transaction verification successful")
+	return true
+}
+
+// BytesToHexString converts a byte slice to a hex string
+func BytesToHexString(b []byte) string {
+	return hex.EncodeToString(b)
+}
+
+// sealHash returns the hash of a block prior to it being sealed.
+func sealHash(header *Header) (hash common.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	encodeHeader(hasher, header)
 	hasher.Sum(hash[:0])
@@ -94,7 +111,7 @@ func SealHash(header *Header) (hash common.Hash) {
 }
 
 func SignHeader(header *Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	sig, err := crypto.Sign(SealHash(header).Bytes(), privateKey)
+	sig, err := crypto.Sign(sealHash(header).Bytes(), privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +122,7 @@ func SignHeader(header *Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 func VerifyHeaderSignature(header *Header, publicKey *ecdsa.PublicKey) bool {
 	r := new(big.Int).SetBytes(header.ExtraData[:32])
 	s := new(big.Int).SetBytes(header.ExtraData[32:])
-	return ecdsa.Verify(publicKey, SealHash(header).Bytes(), r, s)
+	return ecdsa.Verify(publicKey, sealHash(header).Bytes(), r, s)
 }
 
 // decodeSignature decodes the signature into v, r, and s values
@@ -151,7 +168,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 }
 
 // This is not transaction hash. This is only used for generating signatures
-func Hash(tx *Tx) common.Hash {
+func Hash(tx *UnSignedTx) common.Hash {
 	return rlpHash([]interface{}{
 		tx.To,
 		tx.Value,
@@ -160,7 +177,7 @@ func Hash(tx *Tx) common.Hash {
 }
 
 // HashSigned returns the tx hash
-func HashSigned(tx *SignedTx) common.Hash {
+func HashSigned(tx *Transaction) common.Hash {
 	return rlpHash(tx)
 }
 

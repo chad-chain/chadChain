@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
 	t "github.com/malay44/chadChain/core/types"
@@ -55,6 +56,44 @@ func main() {
 	log.Default().Println("Hello, world!")
 	miningInit()
 
+}
+
+func TestTransactionSig() {
+	transaction := t.UnSignedTx{
+		To:    common.HexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+		Value: 0,
+		Nonce: 0,
+	}
+
+	privateKey, _, accAddr, _ := t.GenerateNewPrivateKey()
+
+	log.Default().Println("Private Key:", privateKey)
+
+	log.Default().Println("Account Address:", accAddr)
+
+	signedTx, err := t.SignTransaction(&transaction, privateKey)
+
+	if err != nil {
+		log.Default().Println("Failed to sign transaction:", err)
+	}
+
+	log.Default().Println("Signed Transaction:", signedTx)
+
+	log.Default().Println("Transaction:", transaction)
+
+	sender, err := t.VerifySign(&signedTx)
+
+	if err != nil {
+		log.Default().Println("Failed to recover sender:", err)
+	}
+
+	log.Default().Println("Sender:", sender)
+
+	if sender == accAddr {
+		log.Default().Println("Transaction is valid")
+	} else {
+		log.Default().Println("Transaction is invalid")
+	}
 }
 
 func miningInit() {
