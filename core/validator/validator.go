@@ -1,4 +1,4 @@
-package main
+package validator
 
 import (
 	"log"
@@ -29,8 +29,8 @@ func ValidateTransaction(tr *t.Transaction) bool {
 	return true
 }
 
-func ValidateBlock(b t.Block) bool {
-	if t.VerifyHeaderSignature(b.Header) {
+func ValidateBlock(b *t.Block) bool {
+	if !t.VerifyHeader(b) {
 		log.Default().Println("Failed to verify header signature")
 		return false
 	}

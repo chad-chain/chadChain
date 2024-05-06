@@ -39,7 +39,7 @@ func SignTransaction(tx *UnSignedTx, privateKey *ecdsa.PrivateKey) (Transaction,
 	h := Hash(tx)
 	sig, err := crypto.Sign(h[:], privateKey)
 	if err != nil {
-		panic(err)
+		return Transaction{}, err
 	}
 	R, S, V := decodeSignature(sig)
 	// Create a signed transaction by V, R, S values
@@ -67,35 +67,6 @@ func VerifyTxSign(t *Transaction) (common.Address, error) {
 	return sender, nil
 }
 
-func VerifyTx(tx *Transaction) bool {
-	UnSignedTx := UnSignedTx{
-		To:    tx.To,
-		Value: tx.Value,
-		Nonce: tx.Nonce,
-	}
-	sender, err := recoverPlain(Hash(&UnSignedTx), tx.R, tx.S, tx.V, true)
-	if err != nil {
-		log.Default().Println("Failed to recover sender:", err)
-		return false
-	}
-
-	acc, err := GetAccount(sender)
-	if err != nil {
-		log.Default().Println("Failed to get account:", err)
-		return false
-	}
-
-	if acc.Balance < tx.Value {
-		log.Default().Println("Insufficient balance")
-		log.Default().Println("Tx:", tx)
-		log.Default().Println("Sender:", BytesToHexString(sender[:]))
-		return false
-	}
-
-	log.Default().Println("Transaction verification successful")
-	return true
-}
-
 // BytesToHexString converts a byte slice to a hex string
 func BytesToHexString(b []byte) string {
 	return hex.EncodeToString(b)
@@ -115,14 +86,20 @@ func SignHeader(header *Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	header.ExtraData = sig
 	return sig, nil
 }
 
-func VerifyHeaderSignature(header *Header, publicKey *ecdsa.PublicKey) bool {
-	r := new(big.Int).SetBytes(header.ExtraData[:32])
-	s := new(big.Int).SetBytes(header.ExtraData[32:])
-	return ecdsa.Verify(publicKey, sealHash(header).Bytes(), r, s)
+func VerifyHeader(block *Block) bool {
+	pubKey, err := crypto.Ecrecover(sealHash(&block.Header).Bytes(), block.Header.ExtraData)
+	if err != nil {
+		log.Default().Println("Failed to recover public key:", err)
+		return false
+	}
+
+	var signer common.Address
+
+	copy(signer[:], crypto.Keccak256(pubKey[1:])[12:])
+	return signer == block.Header.Miner
 }
 
 // decodeSignature decodes the signature into v, r, and s values
@@ -138,7 +115,7 @@ func decodeSignature(sig []byte) (r, s, v *big.Int) {
 }
 
 // recoverPlain recovers the address which has signed the given data using the v, r, and s values
-func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
+func recoverPlain(sigHash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
 	if Vb.BitLen() > 8 {
 		// return common.Address{}, ErrInvalidSig
 		panic("invalid signature")
@@ -155,7 +132,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
 	// recover the public key from the signature
-	pub, err := crypto.Ecrecover(sighash[:], sig)
+	pub, err := crypto.Ecrecover(sigHash[:], sig)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -193,9 +170,14 @@ func rlpHash(x interface{}) (h common.Hash) {
 }
 
 func encodeHeader(w io.Writer, header *Header) {
+	// Remove the ExtraData field from the header before encoding
 	enc := []interface{}{
-		header.Number,
+		header.ParentHash,
+		header.Miner,
 		header.StateRoot,
+		header.TransactionsRoot,
+		header.Number,
+		header.Timestamp,
 	}
 
 	if err := rlp.Encode(w, enc); err != nil {

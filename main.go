@@ -9,6 +9,7 @@ import (
 	n "github.com/malay44/chadChain/core/network"
 	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
+	"github.com/malay44/chadChain/core/validator"
 )
 
 func main() {
@@ -95,6 +96,41 @@ func TestTransactionSig() {
 	} else {
 		log.Default().Println("Transaction is invalid")
 	}
+}
+
+func TestBlockSig() {
+	privateKey, _, accAddr, _ := t.GenerateNewPrivateKey()
+
+	header := t.Header{
+		ParentHash:       [32]byte{},
+		StateRoot:        [32]byte{},
+		TransactionsRoot: [32]byte{},
+		Timestamp:        uint64(time.Now().Unix()),
+		Number:           0,
+		Miner:            accAddr,
+		ExtraData:        []byte{},
+	}
+
+	sig, err := t.SignHeader(&header, privateKey)
+	header.ExtraData = sig
+
+	block := t.Block{
+		Header:       header,
+		Transactions: []t.Transaction{},
+	}
+
+	if err != nil {
+		log.Default().Println("Failed to sign header:", err)
+	}
+
+	log.Default().Println("Signature:", sig)
+
+	if validator.ValidateBlock(&block) {
+		log.Default().Println("Block is valid")
+	} else {
+		log.Default().Println("Block is invalid")
+	}
+
 }
 
 func miningInit() {
