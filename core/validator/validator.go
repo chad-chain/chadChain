@@ -7,7 +7,7 @@ import (
 )
 
 func ValidateTransaction(tr *t.Transaction) bool {
-	sender, err := t.VerifySign(tr)
+	sender, err := t.VerifyTxSign(tr)
 	if err != nil {
 		log.Default().Println("Failed to recover sender:", err)
 		return false
@@ -30,6 +30,9 @@ func ValidateTransaction(tr *t.Transaction) bool {
 }
 
 func ValidateBlock(b t.Block) bool {
-	// validate block
+	if t.VerifyHeaderSignature(b.Header) {
+		log.Default().Println("Failed to verify header signature")
+		return false
+	}
 	return true
 }

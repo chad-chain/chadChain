@@ -82,7 +82,7 @@ func TestTransactionSig() {
 
 	log.Default().Println("Transaction:", transaction)
 
-	sender, err := t.VerifySign(&signedTx)
+	sender, err := t.VerifyTxSign(&signedTx)
 
 	if err != nil {
 		log.Default().Println("Failed to recover sender:", err)
@@ -153,16 +153,6 @@ func Timer(timerCh chan string, miners []string) {
 // 		}
 // 	}
 // }
-
-func initGlobalVar() {
-	err := db.BadgerDB.View(db.Get([]byte("stateRootHash"), &t.StateRootHash))
-	if err != nil {
-		log.Default().Printf("StateRootHash not found\n")
-		log.Default().Println(err.Error())
-		return
-	}
-	log.Default().Printf("StateRootHash: %x\n", t.StateRootHash)
-}
 
 func testDBFunc(block t.Block) {
 	err := db.BadgerDB.Update(db.Insert([]byte("block"), block))

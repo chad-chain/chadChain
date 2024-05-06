@@ -54,7 +54,7 @@ func SignTransaction(tx *UnSignedTx, privateKey *ecdsa.PrivateKey) (Transaction,
 	return signedTx, nil
 }
 
-func VerifySign(t *Transaction) (common.Address, error) {
+func VerifyTxSign(t *Transaction) (common.Address, error) {
 	UnSignedTx := UnSignedTx{
 		To:    t.To,
 		Value: t.Value,
