@@ -7,6 +7,10 @@ import (
 	"os"
 )
 
+var (
+	PORT = "3000" // Port number for the RPC server
+)
+
 func sendTx(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -105,9 +109,10 @@ func Rpc() {
 	http.HandleFunc("/getNonce", getNonce)
 	http.HandleFunc("/getBalance", getBalance)
 
-	err := http.ListenAndServe(":"+"3000", nil)
+	err := http.ListenAndServe(":"+PORT, nil)
 	if err != nil {
 		fmt.Printf("Error starting server: %s\n", err)
 		os.Exit(1)
 	}
+	print("Server started at port" + PORT)
 }

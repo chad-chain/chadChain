@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -13,7 +14,16 @@ import (
 )
 
 func main() {
-	// n.Http()
+	n.CtxVar = context.Background()
+	n.PeerAddrs = []string{
+		"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
+	}
+	go func() {
+		n.Rpc()
+	}()
+	go func() {
+		n.Run()
+	}()
 	// db.InitBadger()
 	// defer db.BadgerDB.Close()
 	// initialize.GlobalDBVar()
@@ -22,17 +32,11 @@ func main() {
 	// if err != nil {
 	// 	log.Fatal("Error loading .env file")
 	// }
-	// n.PeerAddrs = []string{
-	// 	"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
-	// 	"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
-	// }
-	n.PeerAddrs = []string{
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K"}
 
-	// n.CtxVar = context.Background()
-	// n.Run()
+	// n.PeerAddrs = []string{
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K"}
 
 	// bbc := t.Block{}
 	// bbch := t.Header{}
@@ -55,9 +59,8 @@ func main() {
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
-	log.Default().Println("Hello, world!")
 	miningInit()
-
+	select {}
 }
 
 func TestTransactionSig() {
