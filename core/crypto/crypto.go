@@ -45,9 +45,9 @@ func LoadPrivateKeyAndAddr(privateKeyHex string) (*ecdsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func SignTransaction(tx *t.UnSignedTx, privateKey *ecdsa.PrivateKey) (t.Transaction, error) {
+func SignTransaction(tx *t.UnSignedTx) (t.Transaction, error) {
 	h := Hash(tx)
-	sig, err := crypto.Sign(h[:], privateKey)
+	sig, err := crypto.Sign(h[:], PrivateKey)
 	if err != nil {
 		return t.Transaction{}, err
 	}
@@ -100,8 +100,8 @@ func sealHash(header *t.Header) (hash common.Hash) {
 	return hash
 }
 
-func SignHeader(header *t.Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	sig, err := crypto.Sign(sealHash(header).Bytes(), privateKey)
+func SignHeader(header *t.Header) ([]byte, error) {
+	sig, err := crypto.Sign(sealHash(header).Bytes(), PrivateKey)
 	if err != nil {
 		return nil, err
 	}
