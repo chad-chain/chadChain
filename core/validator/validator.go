@@ -3,11 +3,12 @@ package validator
 import (
 	"log"
 
+	"github.com/malay44/chadChain/core/crypto"
 	t "github.com/malay44/chadChain/core/types"
 )
 
 func ValidateTransaction(tr *t.Transaction) bool {
-	sender, err := t.VerifyTxSign(tr)
+	sender, err := crypto.VerifyTxSign(tr)
 	if err != nil {
 		log.Default().Println("Failed to recover sender:", err)
 		return false
@@ -22,7 +23,7 @@ func ValidateTransaction(tr *t.Transaction) bool {
 	if acc.Balance < tr.Value {
 		log.Default().Println("Insufficient balance")
 		log.Default().Println("Tx:", tr)
-		log.Default().Println("Sender:", t.BytesToHexString(sender[:]))
+		log.Default().Println("Sender:", crypto.BytesToHexString(sender[:]))
 		return false
 	}
 
@@ -30,7 +31,7 @@ func ValidateTransaction(tr *t.Transaction) bool {
 }
 
 func ValidateBlock(b *t.Block) bool {
-	if !t.VerifyHeader(b) {
+	if !crypto.VerifyHeader(b) {
 		log.Default().Println("Failed to verify header signature")
 		return false
 	}

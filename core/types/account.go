@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	s "github.com/malay44/chadChain/core/storage"
 	rlp "github.com/malay44/chadChain/core/utils"
 )
@@ -36,7 +37,7 @@ func (ac *Account) AddAccount() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	hash := Keccak256(val)
+	hash := crypto.Keccak256(val)
 	marshaledHash, err := rlp.EncodeData(hash, false)
 	if err != nil {
 		return "", "", err
@@ -130,7 +131,7 @@ func ComputeRootHash() ([]byte, error) {
 		return []byte{}, err
 	}
 
-	return Keccak256(hashes...), nil
+	return crypto.Keccak256(hashes...), nil
 
 }
 

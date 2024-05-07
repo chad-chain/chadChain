@@ -1,4 +1,4 @@
-package types
+package crypto
 
 import (
 	"crypto/ecdsa"
@@ -13,17 +13,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	t "github.com/malay44/chadChain/core/types"
 	"golang.org/x/crypto/sha3"
 )
 
-func Keccak256(data ...[]byte) []byte {
-	hashState := sha3.NewLegacyKeccak256()
-	for _, input := range data {
-		hashState.Write(input)
-	}
-
-	return hashState.Sum(nil)
-}
+var PrivateKey *ecdsa.PrivateKey
+var PrivateKeyHex string
+var Address common.Address
 
 func GenerateNewPrivateKey() (*ecdsa.PrivateKey, string, common.Address, error) {
 	privateKey, err := crypto.GenerateKey()
@@ -32,18 +28,32 @@ func GenerateNewPrivateKey() (*ecdsa.PrivateKey, string, common.Address, error) 
 	}
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
 	privateKeyHex := hex.EncodeToString(crypto.FromECDSA(privateKey))
+	PrivateKey = privateKey
+	PrivateKeyHex = privateKeyHex
+	Address = address
 	return privateKey, privateKeyHex, address, nil
 }
 
-func SignTransaction(tx *UnSignedTx, privateKey *ecdsa.PrivateKey) (Transaction, error) {
+func LoadPrivateKeyAndAddr(privateKeyHex string) (*ecdsa.PrivateKey, error) {
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return nil, err
+	}
+	PrivateKey = privateKey
+	PrivateKeyHex = privateKeyHex
+	Address = crypto.PubkeyToAddress(privateKey.PublicKey)
+	return privateKey, nil
+}
+
+func SignTransaction(tx *t.UnSignedTx, privateKey *ecdsa.PrivateKey) (t.Transaction, error) {
 	h := Hash(tx)
 	sig, err := crypto.Sign(h[:], privateKey)
 	if err != nil {
-		return Transaction{}, err
+		return t.Transaction{}, err
 	}
 	R, S, V := decodeSignature(sig)
 	// Create a signed transaction by V, R, S values
-	signedTx := Transaction{
+	signedTx := t.Transaction{
 		To:    tx.To,
 		Value: tx.Value,
 		Nonce: tx.Nonce,
@@ -54,13 +64,13 @@ func SignTransaction(tx *UnSignedTx, privateKey *ecdsa.PrivateKey) (Transaction,
 	return signedTx, nil
 }
 
-func VerifyTxSign(t *Transaction) (common.Address, error) {
-	UnSignedTx := UnSignedTx{
-		To:    t.To,
-		Value: t.Value,
-		Nonce: t.Nonce,
+func VerifyTxSign(txn *t.Transaction) (common.Address, error) {
+	UnSignedTx := t.UnSignedTx{
+		To:    txn.To,
+		Value: txn.Value,
+		Nonce: txn.Nonce,
 	}
-	sender, err := recoverPlain(Hash(&UnSignedTx), t.R, t.S, t.V, true)
+	sender, err := recoverPlain(Hash(&UnSignedTx), txn.R, txn.S, txn.V, true)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -72,8 +82,17 @@ func BytesToHexString(b []byte) string {
 	return hex.EncodeToString(b)
 }
 
+// HexStringToBytes converts a hex string to a byte slice
+func HexStringToBytes(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return b
+}
+
 // sealHash returns the hash of a block prior to it being sealed.
-func sealHash(header *Header) (hash common.Hash) {
+func sealHash(header *t.Header) (hash common.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	encodeHeader(hasher, header)
 	hasher.Sum(hash[:0])
@@ -81,7 +100,7 @@ func sealHash(header *Header) (hash common.Hash) {
 	return hash
 }
 
-func SignHeader(header *Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
+func SignHeader(header *t.Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	sig, err := crypto.Sign(sealHash(header).Bytes(), privateKey)
 	if err != nil {
 		return nil, err
@@ -89,7 +108,7 @@ func SignHeader(header *Header, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	return sig, nil
 }
 
-func VerifyHeader(block *Block) bool {
+func VerifyHeader(block *t.Block) bool {
 	pubKey, err := crypto.Ecrecover(sealHash(&block.Header).Bytes(), block.Header.ExtraData)
 	if err != nil {
 		log.Default().Println("Failed to recover public key:", err)
@@ -145,7 +164,7 @@ func recoverPlain(sigHash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 }
 
 // This is not transaction hash. This is only used for generating signatures
-func Hash(tx *UnSignedTx) common.Hash {
+func Hash(tx *t.UnSignedTx) common.Hash {
 	return rlpHash([]interface{}{
 		tx.To,
 		tx.Value,
@@ -154,7 +173,7 @@ func Hash(tx *UnSignedTx) common.Hash {
 }
 
 // HashSigned returns the tx hash
-func HashSigned(tx *Transaction) common.Hash {
+func HashSigned(tx *t.Transaction) common.Hash {
 	return rlpHash(tx)
 }
 
@@ -169,7 +188,7 @@ func rlpHash(x interface{}) (h common.Hash) {
 	return h
 }
 
-func encodeHeader(w io.Writer, header *Header) {
+func encodeHeader(w io.Writer, header *t.Header) {
 	// Remove the ExtraData field from the header before encoding
 	enc := []interface{}{
 		header.ParentHash,
