@@ -57,7 +57,7 @@ func Keys() {
 		log.Default().Println("Private key and Address loaded")
 		fmt.Println("---------------------------------------------------------------------------------------------------")
 		fmt.Println("Private key: ", crypto.PrivateKeyHex)
-		fmt.Println("Wallet Address: ", crypto.Address.Hex())
+		fmt.Println("Wallet Address: ", crypto.MinerAddress.Hex())
 		fmt.Println("---------------------------------------------------------------------------------------------------")
 	}
 }

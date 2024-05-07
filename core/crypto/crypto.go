@@ -19,7 +19,7 @@ import (
 
 var PrivateKey *ecdsa.PrivateKey
 var PrivateKeyHex string
-var Address common.Address
+var MinerAddress common.Address
 
 func GenerateNewPrivateKey() (*ecdsa.PrivateKey, string, common.Address, error) {
 	privateKey, err := crypto.GenerateKey()
@@ -30,7 +30,7 @@ func GenerateNewPrivateKey() (*ecdsa.PrivateKey, string, common.Address, error) 
 	privateKeyHex := hex.EncodeToString(crypto.FromECDSA(privateKey))
 	PrivateKey = privateKey
 	PrivateKeyHex = privateKeyHex
-	Address = address
+	MinerAddress = address
 	return privateKey, privateKeyHex, address, nil
 }
 
@@ -41,7 +41,7 @@ func LoadPrivateKeyAndAddr(privateKeyHex string) (*ecdsa.PrivateKey, error) {
 	}
 	PrivateKey = privateKey
 	PrivateKeyHex = privateKeyHex
-	Address = crypto.PubkeyToAddress(privateKey.PublicKey)
+	MinerAddress = crypto.PubkeyToAddress(privateKey.PublicKey)
 	return privateKey, nil
 }
 
