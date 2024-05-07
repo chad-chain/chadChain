@@ -2,8 +2,6 @@ package types
 
 import (
 	"math/big"
-
-	"github.com/ethereum/go-ethereum/rlp"
 )
 
 type Transaction struct {
@@ -34,45 +32,4 @@ func (t *Transaction) SendTransaction(tr Transaction) {
 func (t *Transaction) AddTransaction(tr Transaction) {
 	// get transaction from network
 	// add to transaction pool
-}
-
-func EncodeTransaction(tx Transaction) ([]byte, error) {
-	encodedTx, err := rlp.EncodeToBytes(tx)
-	if err != nil {
-		return nil, err
-	}
-	return encodedTx, nil
-}
-
-func DecodeTransaction(data []byte) (Transaction, error) {
-	var tx Transaction
-	if err := rlp.DecodeBytes(data, &tx); err != nil {
-		return tx, err
-	}
-	return tx, nil
-}
-
-// Validate transaction
-func (t *Transaction) ValidateTransaction(tr Transaction) bool {
-	// validate transaction
-	return true
-}
-
-func EncodeTransactions(transactions []Transaction) ([]byte, error) {
-
-	var encodedTransactions [][]byte
-	for _, tx := range transactions {
-		encodedTx, err := rlp.EncodeToBytes(tx)
-		if err != nil {
-			return nil, err
-		}
-		encodedTransactions = append(encodedTransactions, encodedTx)
-	}
-
-	encodedData, err := rlp.EncodeToBytes(encodedTransactions)
-	if err != nil {
-		return nil, err
-	}
-
-	return encodedData, nil
 }

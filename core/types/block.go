@@ -5,7 +5,6 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
 	db "github.com/malay44/chadChain/core/storage"
 	"github.com/malay44/chadChain/core/utils"
 )
@@ -72,69 +71,11 @@ func (b *Block) AddBlockToChain() error {
 }
 
 // create block
-func CreateBlock(header Header, transactions []Transaction) Block {
+func CreateBlock(header *Header, transactions *[]Transaction) *Block {
 	block := new(Block)
-	block.Header = header
-	block.Transactions = transactions
-	return *block
-}
-
-func EncodeBlock(block Block) ([]byte, error) {
-	// Encode the header
-	encodedHeader, err := EncodeHeader(block.Header)
-	if err != nil {
-		return nil, err
-	}
-
-	// Encode the transactions
-	var encodedTransactions [][]byte
-	for _, tx := range block.Transactions {
-		encodedTx, err := EncodeTransaction(tx)
-		if err != nil {
-			return nil, err
-		}
-		encodedTransactions = append(encodedTransactions, encodedTx)
-	}
-
-	// Combine encoded header and transactions
-	encodedBlock := [][]byte{encodedHeader}
-	encodedBlock = append(encodedBlock, encodedTransactions...)
-
-	// RLP encode the entire block
-	encodedData, err := rlp.EncodeToBytes(encodedBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	return encodedData, nil
-}
-
-func DecodeBlock(data []byte) (Block, error) {
-	var decodedBlock [][]byte
-	if err := rlp.DecodeBytes(data, &decodedBlock); err != nil {
-		return Block{}, err
-	}
-
-	// Decode header
-	decodedHeader, err := DecodeHeader(decodedBlock[0])
-	if err != nil {
-		return Block{}, err
-	}
-
-	// Decode transactions
-	var decodedTransactions []Transaction
-	for _, txData := range decodedBlock[1:] {
-		decodedTx, err := DecodeTransaction(txData)
-		if err != nil {
-			return Block{}, err
-		}
-		decodedTransactions = append(decodedTransactions, decodedTx)
-	}
-
-	return Block{
-		Header:       decodedHeader,
-		Transactions: decodedTransactions,
-	}, nil
+	block.Header = *header
+	block.Transactions = *transactions
+	return block
 }
 
 func GetParentBlock() Block {
