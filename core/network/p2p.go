@@ -15,13 +15,15 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	t "github.com/malay44/chadChain/core/types"
 	r "github.com/malay44/chadChain/core/utils"
+	"github.com/malay44/chadChain/core/validator"
 	"github.com/multiformats/go-multiaddr"
 )
 
 var (
-	hostVar   host.Host
-	CtxVar    context.Context
-	PeerAddrs []string
+	hostVar       host.Host
+	CtxVar        context.Context
+	PeerAddrs     []string
+	VoteThreshold = 2
 )
 
 type vote struct {
@@ -60,7 +62,14 @@ func setupHost() (host.Host, error) {
 	return host, nil
 }
 
-func connectToPeer(addr string) error {
+//GetHostAddr gives array of strings
+
+func GetHostAddr() []string {
+	return []string{hostVar.Addrs()[0].String() + "/p2p/" + hostVar.ID().String(),
+		hostVar.Addrs()[1].String() + "/p2p/" + hostVar.ID().String()}
+}
+
+func ConnectToPeer(addr string) error {
 
 	peerMA, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
@@ -77,6 +86,7 @@ func connectToPeer(addr string) error {
 	}
 
 	fmt.Println("Connected to", peerAddrInfo.String())
+	SendPingToPeer(peerAddrInfo.ID)
 	return nil
 }
 
@@ -181,7 +191,7 @@ func streamHandler(s network.Stream) {
 			fmt.Println("Error decoding data:", err)
 			return
 		}
-		ReceiveBlock(block)
+		receiveBlock(block)
 
 	case 10:
 		handleVoteMessage(msg.Data)
@@ -224,10 +234,12 @@ func handleVoteMessage(data []byte) {
 		blockVotes[blockNumber].noVotes++
 	}
 
+	println("block 1 votes", blockVotes[1].yesVotes, blockVotes[1].noVotes)
+
 	// Check if the block has received enough votes
-	if blockVotes[blockNumber].yesVotes >= 2 {
+	if blockVotes[blockNumber].yesVotes >= VoteThreshold {
 		commitBlock(blockNumber)
-	} else if blockVotes[blockNumber].noVotes >= 2 {
+	} else if blockVotes[blockNumber].noVotes >= VoteThreshold {
 		discardBlock(blockNumber)
 	}
 }
@@ -253,6 +265,7 @@ func SendVote(blockNumber uint64, vote uint8) {
 		return
 	}
 	sendToAllPeers(message{ID: 10, Code: 0, Want: 0, Data: data})
+	println("Sent Vote for block number = ", blockNumber, " Vote = ", vote)
 }
 
 func SendBlock(block t.Block) {
@@ -264,8 +277,13 @@ func SendBlock(block t.Block) {
 	sendToAllPeers(message{ID: 5, Code: 0, Want: 0, Data: data})
 }
 
-func ReceiveBlock(block t.Block) {
-	fmt.Println("Received Block: ", block)
+func receiveBlock(block t.Block) {
+	fmt.Println("Received Block number = ", block.Header.Number)
+	if validator.ValidateBlock(&block) {
+		SendVote(block.Header.Number, 1)
+	} else {
+		SendVote(block.Header.Number, 0)
+	}
 }
 
 func Address(receivedAddress string) {
@@ -292,13 +310,35 @@ func ReceiveAddress(addr string) {
 	fmt.Println("address Received: ", addr)
 }
 
-func sendPing() {
+func SendPing() {
 	data, err := r.EncodeData("PING", false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
 	}
 	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: data})
+}
+
+func SendPingToPeer(peerID peer.ID) {
+	data, err := r.EncodeData("PING", false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+
+	// Create a new stream to the peer
+	s, err := hostVar.NewStream(CtxVar, peerID, "/")
+	if err != nil {
+		fmt.Println("Error creating stream:", err)
+		return
+	}
+	defer s.Close() // Close the stream when done
+
+	// Send PING message
+	encoder := json.NewEncoder(s)
+	if err := encoder.Encode(message{ID: 0, Code: 0, Want: 0, Data: data}); err != nil {
+		fmt.Println("Error encoding message:", err)
+	}
 }
 
 func sendPongToPeer(peerID peer.ID) {
@@ -335,10 +375,16 @@ func Run() {
 	var err error
 	blockVotes = make(map[uint64]*vote)
 	hostVar, err = setupHost()
+	hostVar.SetStreamHandler("/", streamHandler)
 	if err != nil {
 		panic(err)
 	}
 	defer hostVar.Close()
+
+	go func() {
+		Rpc()
+	}()
+	GetAllAddrsFromRoot()
 
 	fmt.Println("Addresses:", hostVar.Addrs())
 	// fmt.Println("ID:", hostVar.ID())
@@ -350,16 +396,14 @@ func Run() {
 			println("Skipping self address")
 			continue
 		}
-		if err := connectToPeer(addr); err != nil {
+		if err := ConnectToPeer(addr); err != nil {
 			fmt.Println("Error connecting to peer:", err)
 			continue
 		}
 		fmt.Println("Connected to peer:", addr)
 	}
-	SendVote(1, 1)
-	sendPing()
-
-	hostVar.SetStreamHandler("/", streamHandler)
+	// SendVote(1, 1)
+	SendPing()
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)

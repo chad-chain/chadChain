@@ -15,15 +15,15 @@ import (
 
 func main() {
 	n.CtxVar = context.Background()
-	n.PeerAddrs = []string{
-		"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
-	}
-	go func() {
-		n.Rpc()
-	}()
+	// n.PeerAddrs = []string{
+	// 	// "/ip4/127.0.0.1/tcp/63795/p2p/12D3KooWBMNwiqwM1DhRXDaTXU2CYCdpKMDY5tNxfviq7ogFmFhW",
+	// }
 	go func() {
 		n.Run()
 	}()
+	// go func() {
+	// 	n.Rpc()
+	// }()
 	// db.InitBadger()
 	// defer db.BadgerDB.Close()
 	// initialize.GlobalDBVar()
@@ -59,7 +59,7 @@ func main() {
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
-	miningInit()
+	// miningInit()
 	select {}
 }
 
