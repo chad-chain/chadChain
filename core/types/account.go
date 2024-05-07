@@ -59,26 +59,14 @@ func (ac *Account) AddAccount() (string, string, error) {
 		return "", "", err
 	}
 
+	// recompute state root hash
 	StateRootHash, err = ComputeRootHash()
 	if err != nil {
 		return "", "", err
 	}
 
 	// save state root hash to db
-	err = s.BadgerDB.Update(func(tx *badger.Txn) error {
-		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
-		if err != nil {
-			fmt.Println("error updating state root hash: ", err.Error())
-			if err == badger.ErrKeyNotFound {
-				err = s.Insert([]byte("stateRootHash"), StateRootHash)(tx)
-				if err != nil {
-					return err
-				}
-			}
-			return err
-		}
-		return nil
-	})
+	err = saveStateRootHash(StateRootHash)
 
 	// check for errors
 	if err != nil {
@@ -88,6 +76,37 @@ func (ac *Account) AddAccount() (string, string, error) {
 	// log.Default().Println("Account saved to db with \nkey", accKey, "\nhash key", hashKey, "\nstate root hash", StateRootHash)
 	log.Default().Printf("Account saved to db with \nkey %s \nhash key %s \nstate root hash %x\n", accKey, hashKey, StateRootHash)
 	return accKey, hashKey, nil
+}
+
+func (ac *Account) UpdateAccount() (func(tx *badger.Txn) error, error) {
+	// create keys for account and its hash
+	addrSlice := ac.Address[:]
+	accKey := "account" + string(addrSlice)
+	hashKey := "hash" + string(addrSlice)
+
+	// marshal account info to byte array and hash it
+	val, err := rlp.EncodeData(ac, false)
+	if err != nil {
+		return nil, err
+	}
+	hash := crypto.Keccak256(val)
+	marshaledHash, err := rlp.EncodeData(hash, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// save account info and its hash to db
+	return func(tx *badger.Txn) error {
+		err := s.Update([]byte(accKey), ac)(tx)
+		if err != nil {
+			return err
+		}
+		err = s.Update([]byte(hashKey), marshaledHash)(tx)
+		if err != nil {
+			return err
+		}
+		return nil
+	}, nil
 }
 
 // Get account from db
@@ -132,7 +151,35 @@ func ComputeRootHash() ([]byte, error) {
 	}
 
 	return crypto.Keccak256(hashes...), nil
+}
 
+func saveStateRootHash(hash []byte) error {
+	err := s.BadgerDB.Update(func(tx *badger.Txn) error {
+		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
+		if err != nil {
+			fmt.Println("error updating state root hash: ", err.Error())
+			if err == badger.ErrKeyNotFound {
+				err = s.Insert([]byte("stateRootHash"), StateRootHash)(tx)
+				if err != nil {
+					return err
+				}
+				StateRootHash = hash
+			}
+			return err
+		}
+		return nil
+	})
+
+	return err
+}
+
+func ComputeAndSaveRootHash() error {
+	hash, err := ComputeRootHash()
+	if err != nil {
+		return err
+	}
+	err = saveStateRootHash(hash)
+	return err
 }
 
 // send account over network
