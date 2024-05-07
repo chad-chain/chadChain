@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/malay44/chadChain/core/crypto"
 	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
 	db "github.com/malay44/chadChain/core/storage"
@@ -70,13 +71,13 @@ func TestTransactionSig() {
 		Nonce: 0,
 	}
 
-	privateKey, _, accAddr, _ := t.GenerateNewPrivateKey()
+	privateKey, _, accAddr, _ := crypto.GenerateNewPrivateKey()
 
 	log.Default().Println("Private Key:", privateKey)
 
 	log.Default().Println("Account Address:", accAddr)
 
-	signedTx, err := t.SignTransaction(&transaction, privateKey)
+	signedTx, err := crypto.SignTransaction(&transaction)
 
 	if err != nil {
 		log.Default().Println("Failed to sign transaction:", err)
@@ -86,7 +87,7 @@ func TestTransactionSig() {
 
 	log.Default().Println("Transaction:", transaction)
 
-	sender, err := t.VerifyTxSign(&signedTx)
+	sender, err := crypto.VerifyTxSign(&signedTx)
 
 	if err != nil {
 		log.Default().Println("Failed to recover sender:", err)
@@ -102,7 +103,7 @@ func TestTransactionSig() {
 }
 
 func TestBlockSig() {
-	privateKey, _, accAddr, _ := t.GenerateNewPrivateKey()
+	_, _, accAddr, _ := crypto.GenerateNewPrivateKey()
 
 	header := t.Header{
 		ParentHash:       [32]byte{},
@@ -114,7 +115,7 @@ func TestBlockSig() {
 		ExtraData:        []byte{},
 	}
 
-	sig, err := t.SignHeader(&header, privateKey)
+	sig, err := crypto.SignHeader(&header)
 	header.ExtraData = sig
 
 	block := t.Block{
@@ -153,7 +154,7 @@ func miningInit() {
 			// var minerinByte [20]byte
 			// copy(minerinByte[:], []byte(miner))
 
-			go m.BuildBlock(chn, &transactionPool, [20]byte{})
+			go m.MineBlock(chn, &transactionPool)
 		case blk := <-chn:
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
