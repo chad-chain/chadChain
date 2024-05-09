@@ -1,6 +1,6 @@
 module github.com/malay44/chadChain
 
-go 1.21.6
+go 1.21
 
 require (
 	github.com/dgraph-io/badger/v4 v4.2.0
