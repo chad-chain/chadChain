@@ -408,7 +408,7 @@ func Run() {
 	}
 	// SendVote(1, 1)
 	expectedMiners := make(chan string)
-	m.MiningInit(expectedMiners, PeerAddrs)
+	m.MiningInit(expectedMiners, &PeerAddrs)
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)

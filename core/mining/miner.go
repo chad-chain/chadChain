@@ -132,7 +132,7 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	chn <- b
 }
 
-func MiningInit(expectedMiner chan string, peerAddrs []string) { // add transactionpool as argument
+func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transactionpool as argument
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)
@@ -158,17 +158,17 @@ func MiningInit(expectedMiner chan string, peerAddrs []string) { // add transact
 	}
 }
 
-func Timer(timerCh chan string, miners []string) {
+func Timer(timerCh chan string, miners *[]string) {
 	log.Default().Println("Timer started")
-	index := len(miners) - 1
-	numberOfMiners := len(miners)
+	index := len(*miners) - 1
+	numberOfMiners := len(*miners)
 	time.Sleep(time.Duration(0) * time.Second)
-	timerCh <- (miners)[index]
+	timerCh <- (*miners)[index]
 
 	for {
-		numberOfMiners = len(miners)         // Update the number of miners
+		numberOfMiners = len(*miners)        // Update the number of miners
 		index = (index + 1) % numberOfMiners // Calculate the index
-		timerCh <- (miners)[index]
+		timerCh <- (*miners)[index]
 		time.Sleep(time.Duration(2) * time.Second)
 	}
 }
