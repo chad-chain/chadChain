@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	m "github.com/malay44/chadChain/core/mining"
+	m "github.com/chad-chain/chadChain/core/mining"
 )
 
 var (
