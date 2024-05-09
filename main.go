@@ -23,16 +23,15 @@ func main() {
 	go func() {
 		n.Run()
 	}()
-	// go func() {
-	// 	n.Rpc()
-	// }()
 	// db.InitBadger()
 	// defer db.BadgerDB.Close()
 	// initialize.GlobalDBVar()
+
 	// err := godotenv.Load(".env")
 	// if err != nil {
 	// 	log.Fatal("Error loading .env file")
 	// }
+
 	// n.PeerAddrs = []string{
 	// 	"12D3KooWPot5PSrTg6K",
 	// 	"12D3KooWPot5PSrTg6K",
@@ -40,6 +39,10 @@ func main() {
 	// 	"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
 	// 	"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
 	// }
+	// n.PeerAddrs = []string{
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6",
+	// 	"12D3KooWPot5PSrT6K"}
 
 	// n.CtxVar = context.Background()
 	// n.Run()
@@ -51,14 +54,17 @@ func main() {
 	// bbch.CreateHeader([32]byte{}, [20]byte{}, [32]byte{}, [32]byte{}, 0, 0, 0, 0, []byte{}, 0)
 	// bbct.CreateTransaction([20]byte{}, 0, 0, nil, nil, nil)
 	// bbca.CreateAccount([20]byte{}, 0, 0)
+
 	// bbc.CreateBlock(bbch, []t.Transaction{bbct})
 	// // log.Default().Println("Block created")
 	// // log.Default().Println(bbc)
+
 	// err := db.BadgerDB.Update(db.Insert([]byte("block"), bbc))
 	// if err != nil {
 	// 	println("Update Error", err.Error())
 	// 	log.Fatal(err)
 	// }
+
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
@@ -75,28 +81,41 @@ func TestTransactionSig() {
 		Value: 0,
 		Nonce: 0,
 	}
+
 	privateKey, _, accAddr, _ := crypto.GenerateNewPrivateKey()
+
 	log.Default().Println("Private Key:", privateKey)
+
 	log.Default().Println("Account Address:", accAddr)
+
 	signedTx, err := crypto.SignTransaction(&transaction)
+
 	if err != nil {
 		log.Default().Println("Failed to sign transaction:", err)
 	}
+
 	log.Default().Println("Signed Transaction:", signedTx)
+
 	log.Default().Println("Transaction:", transaction)
+
 	sender, err := crypto.VerifyTxSign(&signedTx)
+
 	if err != nil {
 		log.Default().Println("Failed to recover sender:", err)
 	}
+
 	log.Default().Println("Sender:", sender)
+
 	if sender == accAddr {
 		log.Default().Println("Transaction is valid")
 	} else {
 		log.Default().Println("Transaction is invalid")
 	}
 }
+
 func TestBlockSig() {
 	_, _, accAddr, _ := crypto.GenerateNewPrivateKey()
+
 	header := t.Header{
 		ParentHash:       [32]byte{},
 		StateRoot:        [32]byte{},
@@ -106,16 +125,21 @@ func TestBlockSig() {
 		Miner:            accAddr,
 		ExtraData:        []byte{},
 	}
+
 	sig, err := crypto.SignHeader(&header)
 	header.ExtraData = sig
+
 	block := t.Block{
 		Header:       header,
 		Transactions: []t.Transaction{},
 	}
+
 	if err != nil {
 		log.Default().Println("Failed to sign header:", err)
 	}
+
 	log.Default().Println("Signature:", sig)
+
 	if validator.ValidateBlock(&block) {
 		log.Default().Println("Block is valid")
 	} else {
@@ -128,7 +152,8 @@ func miningInit(expectedMiner chan string) { // add transactionpool as argument
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)
-	@@ -146,36 +159,40 @@ func miningInit() {
+	timerCh := make(chan string)
+
 	go Timer(timerCh, n.PeerAddrs)
 	log.Default().Println("Both Chanells Created")
 
@@ -157,18 +182,15 @@ func Timer(timerCh chan string, miners []string) {
 	index := 0
 	numberOfMiners := len(miners)
 	time.Sleep(time.Duration(0) * time.Second) // set time according to last block miner
-
 	timerCh <- miners[index]
 	index = (index + 1) % numberOfMiners
 
 	for {
 		time.Sleep(time.Duration(2) * time.Second)
-
 		timerCh <- miners[index]
 		index = (index + 1) % numberOfMiners
 		log.Default().Println(miners[index])
 	}
-
 }
 
 // func test(ch chan t.Block, chn chan t.Block) {
@@ -186,12 +208,14 @@ func Timer(timerCh chan string, miners []string) {
 // 		}
 // 	}
 // }
+
 func testDBFunc(block t.Block) {
 	err := db.BadgerDB.Update(db.Insert([]byte("block"), block))
 	if err != nil {
 		println("Update Error", err.Error())
 		log.Fatal(err)
 	}
+
 	retrievedBlock := t.Block{}
 	err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 	if err != nil {
