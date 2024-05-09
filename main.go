@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"strings"
 	"time"
@@ -15,13 +16,13 @@ import (
 )
 
 func main() {
-	// n.CtxVar = context.Background()
+	n.CtxVar = context.Background()
 	// n.PeerAddrs = []string{
 	// 	// "/ip4/127.0.0.1/tcp/63795/p2p/12D3KooWBMNwiqwM1DhRXDaTXU2CYCdpKMDY5tNxfviq7ogFmFhW",
 	// }
-	// go func() {
-	// 	n.Run()
-	// }()
+	go func() {
+		n.Run()
+	}()
 	// go func() {
 	// 	n.Rpc()
 	// }()
@@ -39,10 +40,6 @@ func main() {
 	// 	"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
 	// 	"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
 	// }
-	n.PeerAddrs = []string{
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6",
-		"12D3KooWPot5PSrT6K"}
 
 	// n.CtxVar = context.Background()
 	// n.Run()
@@ -65,11 +62,11 @@ func main() {
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
+	select {}
 	// miningInit()
 	log.Default().Println("Hello, world!")
 	expectedMiners := make(chan string)
 	miningInit(expectedMiners)
-	select {}
 }
 
 func TestTransactionSig() {
@@ -160,15 +157,18 @@ func Timer(timerCh chan string, miners []string) {
 	index := 0
 	numberOfMiners := len(miners)
 	time.Sleep(time.Duration(0) * time.Second) // set time according to last block miner
+
 	timerCh <- miners[index]
 	index = (index + 1) % numberOfMiners
 
 	for {
 		time.Sleep(time.Duration(2) * time.Second)
+
 		timerCh <- miners[index]
 		index = (index + 1) % numberOfMiners
 		log.Default().Println(miners[index])
 	}
+
 }
 
 // func test(ch chan t.Block, chn chan t.Block) {
