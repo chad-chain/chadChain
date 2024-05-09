@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/crypto"
 	db "github.com/malay44/chadChain/core/storage"
 	"github.com/malay44/chadChain/core/utils"
 )
@@ -38,7 +38,7 @@ func (b *Block) RemoveTransactionFromBlock(t Transaction) {
 // Getting Validated Block from network
 func (b *Block) AddBlockToChain() error {
 	marshalledHeader, err := utils.EncodeData(b.Header, false)
-	hash := Keccak256(marshalledHeader)
+	hash := crypto.Keccak256(marshalledHeader)
 
 	if err != nil {
 		return fmt.Errorf("error encoding block header: %v", err)
@@ -49,7 +49,8 @@ func (b *Block) AddBlockToChain() error {
 		if err != nil {
 			return fmt.Errorf("error inserting block into db: %v", err)
 		}
-		err = db.Update([]byte("latestBlock"), hash)(txn)
+		// Update the latest block in the db
+		err = db.Update([]byte("latestBlock"), b)(txn)
 		if err != nil {
 			fmt.Printf("error updating latest block hash: %v", err)
 			if err == badger.ErrKeyNotFound {
@@ -63,75 +64,18 @@ func (b *Block) AddBlockToChain() error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("error adding block to chain: %v", err)
+		return fmt.Errorf("error adding block to DB: %v", err)
 	}
+
 	return nil
 }
 
 // create block
-func CreateBlock(header Header, transactions []Transaction) Block {
+func CreateBlock(header *Header, transactions *[]Transaction) *Block {
 	block := new(Block)
-	block.Header = header
-	block.Transactions = transactions
-	return *block
-}
-
-func EncodeBlock(block Block) ([]byte, error) {
-	// Encode the header
-	encodedHeader, err := EncodeHeader(block.Header)
-	if err != nil {
-		return nil, err
-	}
-
-	// Encode the transactions
-	var encodedTransactions [][]byte
-	for _, tx := range block.Transactions {
-		encodedTx, err := EncodeTransaction(tx)
-		if err != nil {
-			return nil, err
-		}
-		encodedTransactions = append(encodedTransactions, encodedTx)
-	}
-
-	// Combine encoded header and transactions
-	encodedBlock := [][]byte{encodedHeader}
-	encodedBlock = append(encodedBlock, encodedTransactions...)
-
-	// RLP encode the entire block
-	encodedData, err := rlp.EncodeToBytes(encodedBlock)
-	if err != nil {
-		return nil, err
-	}
-
-	return encodedData, nil
-}
-
-func DecodeBlock(data []byte) (Block, error) {
-	var decodedBlock [][]byte
-	if err := rlp.DecodeBytes(data, &decodedBlock); err != nil {
-		return Block{}, err
-	}
-
-	// Decode header
-	decodedHeader, err := DecodeHeader(decodedBlock[0])
-	if err != nil {
-		return Block{}, err
-	}
-
-	// Decode transactions
-	var decodedTransactions []Transaction
-	for _, txData := range decodedBlock[1:] {
-		decodedTx, err := DecodeTransaction(txData)
-		if err != nil {
-			return Block{}, err
-		}
-		decodedTransactions = append(decodedTransactions, decodedTx)
-	}
-
-	return Block{
-		Header:       decodedHeader,
-		Transactions: decodedTransactions,
-	}, nil
+	block.Header = *header
+	block.Transactions = *transactions
+	return block
 }
 
 func GetParentBlock() Block {

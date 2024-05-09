@@ -1,17 +1,31 @@
 package main
 
 import (
+	"context"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/malay44/chadChain/core/crypto"
 	m "github.com/malay44/chadChain/core/mining"
 	n "github.com/malay44/chadChain/core/network"
+	db "github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
+	"github.com/malay44/chadChain/core/validator"
 )
 
 func main() {
-	// n.Http()
+	n.CtxVar = context.Background()
+	// n.PeerAddrs = []string{
+	// 	// "/ip4/127.0.0.1/tcp/63795/p2p/12D3KooWBMNwiqwM1DhRXDaTXU2CYCdpKMDY5tNxfviq7ogFmFhW",
+	// }
+	go func() {
+		n.Run()
+	}()
+	// go func() {
+	// 	n.Rpc()
+	// }()
 	// db.InitBadger()
 	// defer db.BadgerDB.Close()
 	// initialize.GlobalDBVar()
@@ -20,7 +34,11 @@ func main() {
 	// if err != nil {
 	// 	log.Fatal("Error loading .env file")
 	// }
+
 	// n.PeerAddrs = []string{
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K",
+	// 	"12D3KooWPot5PSrTg6K"}
 	// 	"/ip4/192.168.1.4/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkDxBBB",
 	// 	"/ip4/192.168.1.8/tcp/3000/p2p/12D3KooWEDdhybEFMXhN1kzH5iaCZvaBfAGHXqjo83AQ1dkE3Yt5",
 	// }
@@ -53,6 +71,80 @@ func main() {
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
+	// miningInit()
+	select {}
+}
+
+func TestTransactionSig() {
+	transaction := t.UnSignedTx{
+		To:    common.HexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+		Value: 0,
+		Nonce: 0,
+	}
+
+	privateKey, _, accAddr, _ := crypto.GenerateNewPrivateKey()
+
+	log.Default().Println("Private Key:", privateKey)
+
+	log.Default().Println("Account Address:", accAddr)
+
+	signedTx, err := crypto.SignTransaction(&transaction)
+
+	if err != nil {
+		log.Default().Println("Failed to sign transaction:", err)
+	}
+
+	log.Default().Println("Signed Transaction:", signedTx)
+
+	log.Default().Println("Transaction:", transaction)
+
+	sender, err := crypto.VerifyTxSign(&signedTx)
+
+	if err != nil {
+		log.Default().Println("Failed to recover sender:", err)
+	}
+
+	log.Default().Println("Sender:", sender)
+
+	if sender == accAddr {
+		log.Default().Println("Transaction is valid")
+	} else {
+		log.Default().Println("Transaction is invalid")
+	}
+}
+
+func TestBlockSig() {
+	_, _, accAddr, _ := crypto.GenerateNewPrivateKey()
+
+	header := t.Header{
+		ParentHash:       [32]byte{},
+		StateRoot:        [32]byte{},
+		TransactionsRoot: [32]byte{},
+		Timestamp:        uint64(time.Now().Unix()),
+		Number:           0,
+		Miner:            accAddr,
+		ExtraData:        []byte{},
+	}
+
+	sig, err := crypto.SignHeader(&header)
+	header.ExtraData = sig
+
+	block := t.Block{
+		Header:       header,
+		Transactions: []t.Transaction{},
+	}
+
+	if err != nil {
+		log.Default().Println("Failed to sign header:", err)
+	}
+
+	log.Default().Println("Signature:", sig)
+
+	if validator.ValidateBlock(&block) {
+		log.Default().Println("Block is valid")
+	} else {
+		log.Default().Println("Block is invalid")
+	}
 	log.Default().Println("Hello, world!")
 	expectedMiners := make(chan string, 10)
 	miningInit(expectedMiners)
@@ -73,8 +165,12 @@ func miningInit(expectedMiner chan string) {
 		select {
 		case miner := <-timerCh:
 			log.Default().Println("Miner selected", miner)
+			// var minerinByte [20]byte
+			// copy(minerinByte[:], []byte(miner))
+
+			go m.MineBlock(chn, &transactionPool)
 			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
-				go m.BuildBlock(chn, &transactionPool, miner)
+				// go m.BuildBlock(chn, &transactionPool, miner)
 			}
 			log.Default().Println(miner)
 			expectedMiner <- miner // write in a global veriable
@@ -119,29 +215,19 @@ func Timer(timerCh chan string, miners []string) {
 // 	}
 // }
 
-// func initGlobalVar() {
-// 	err := db.BadgerDB.View(db.Get([]byte("stateRootHash"), &t.StateRootHash))
-// 	if err != nil {
-// 		log.Default().Printf("StateRootHash not found\n")
-// 		log.Default().Println(err.Error())
-// 		return
-// 	}
-// 	log.Default().Printf("StateRootHash: %x\n", t.StateRootHash)
-// }
+func testDBFunc(block t.Block) {
+	err := db.BadgerDB.Update(db.Insert([]byte("block"), block))
+	if err != nil {
+		println("Update Error", err.Error())
+		log.Fatal(err)
+	}
 
-// func testDBFunc(block t.Block) {
-// 	err := db.BadgerDB.Update(db.Insert([]byte("block"), block))
-// 	if err != nil {
-// 		println("Update Error", err.Error())
-// 		log.Fatal(err)
-// 	}
-
-// 	retrievedBlock := t.Block{}
-// 	err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
-// 	if err != nil {
-// 		println("View Error", err.Error())
-// 		log.Fatal(err)
-// 	}
-// 	log.Default().Println("Block retrieved")
-// 	log.Default().Println(retrievedBlock)
-// }
+	retrievedBlock := t.Block{}
+	err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
+	if err != nil {
+		println("View Error", err.Error())
+		log.Fatal(err)
+	}
+	log.Default().Println("Block retrieved")
+	log.Default().Println(retrievedBlock)
+}

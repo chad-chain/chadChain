@@ -5,20 +5,22 @@ import (
 	"log"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	s "github.com/malay44/chadChain/core/storage"
 	rlp "github.com/malay44/chadChain/core/utils"
 )
 
 type Account struct {
-	Address [32]byte // The address of the account
-	Nonce   uint64   // The nonce of the account
-	Balance uint64   // The balance of the account
+	Address common.Address // The address of the account
+	Nonce   uint64         // The nonce of the account
+	Balance uint64         // The balance of the account
 }
 
 // State root hash
 var StateRootHash []byte
 
-func (ac *Account) CreateAccount(address [32]byte, nonce uint64, balance uint64) Account {
+func (ac *Account) CreateAccount(address common.Address, nonce uint64, balance uint64) Account {
 	return Account{address, nonce, balance}
 }
 
@@ -35,7 +37,7 @@ func (ac *Account) AddAccount() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	hash := Keccak256(val)
+	hash := crypto.Keccak256(val)
 	marshaledHash, err := rlp.EncodeData(hash, false)
 	if err != nil {
 		return "", "", err
@@ -57,26 +59,14 @@ func (ac *Account) AddAccount() (string, string, error) {
 		return "", "", err
 	}
 
+	// recompute state root hash
 	StateRootHash, err = ComputeRootHash()
 	if err != nil {
 		return "", "", err
 	}
 
 	// save state root hash to db
-	err = s.BadgerDB.Update(func(tx *badger.Txn) error {
-		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
-		if err != nil {
-			fmt.Println("error updating state root hash: ", err.Error())
-			if err == badger.ErrKeyNotFound {
-				err = s.Insert([]byte("stateRootHash"), StateRootHash)(tx)
-				if err != nil {
-					return err
-				}
-			}
-			return err
-		}
-		return nil
-	})
+	err = saveStateRootHash(StateRootHash)
 
 	// check for errors
 	if err != nil {
@@ -88,13 +78,44 @@ func (ac *Account) AddAccount() (string, string, error) {
 	return accKey, hashKey, nil
 }
 
-// Get account from db
-func GetAccount(address string) (Account, error) {
+func (ac *Account) UpdateAccount() (func(tx *badger.Txn) error, error) {
 	// create keys for account and its hash
-	accKey := "account"
+	addrSlice := ac.Address[:]
+	accKey := "account" + string(addrSlice)
+	hashKey := "hash" + string(addrSlice)
+
+	// marshal account info to byte array and hash it
+	val, err := rlp.EncodeData(ac, false)
+	if err != nil {
+		return nil, err
+	}
+	hash := crypto.Keccak256(val)
+	marshaledHash, err := rlp.EncodeData(hash, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// save account info and its hash to db
+	return func(tx *badger.Txn) error {
+		err := s.Update([]byte(accKey), ac)(tx)
+		if err != nil {
+			return err
+		}
+		err = s.Update([]byte(hashKey), marshaledHash)(tx)
+		if err != nil {
+			return err
+		}
+		return nil
+	}, nil
+}
+
+// Get account from db
+func GetAccount(address common.Address) (Account, error) {
+	// create keys for account and its hash
+	accKey := append([]byte("account"), address.Bytes()...)
 	acc := Account{}
 	err := s.BadgerDB.View(func(tx *badger.Txn) error {
-		err := s.Get([]byte(accKey+address), &acc)(tx)
+		err := s.Get([]byte(accKey), &acc)(tx)
 		return err
 	})
 
@@ -129,8 +150,36 @@ func ComputeRootHash() ([]byte, error) {
 		return []byte{}, err
 	}
 
-	return Keccak256(hashes...), nil
+	return crypto.Keccak256(hashes...), nil
+}
 
+func saveStateRootHash(hash []byte) error {
+	err := s.BadgerDB.Update(func(tx *badger.Txn) error {
+		err := s.Update([]byte("stateRootHash"), StateRootHash)(tx)
+		if err != nil {
+			fmt.Println("error updating state root hash: ", err.Error())
+			if err == badger.ErrKeyNotFound {
+				err = s.Insert([]byte("stateRootHash"), StateRootHash)(tx)
+				if err != nil {
+					return err
+				}
+				StateRootHash = hash
+			}
+			return err
+		}
+		return nil
+	})
+
+	return err
+}
+
+func ComputeAndSaveRootHash() error {
+	hash, err := ComputeRootHash()
+	if err != nil {
+		return err
+	}
+	err = saveStateRootHash(hash)
+	return err
 }
 
 // send account over network

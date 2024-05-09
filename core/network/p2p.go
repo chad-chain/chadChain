@@ -14,15 +14,25 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	t "github.com/malay44/chadChain/core/types"
-	rlp "github.com/malay44/chadChain/core/utils"
+	r "github.com/malay44/chadChain/core/utils"
+	"github.com/malay44/chadChain/core/validator"
 	"github.com/multiformats/go-multiaddr"
 )
 
 var (
-	hostVar   host.Host
-	CtxVar    context.Context
-	PeerAddrs []string
+	hostVar       host.Host
+	CtxVar        context.Context
+	PeerAddrs     []string
+	VoteThreshold = 2
 )
+
+type vote struct {
+	blockNumber uint64
+	yesVotes    int
+	noVotes     int
+}
+
+var blockVotes map[uint64]*vote // Map to track votes for each block
 
 func setupHost() (host.Host, error) {
 	// Hex := os.Getenv("PRIV_HEX")
@@ -52,7 +62,14 @@ func setupHost() (host.Host, error) {
 	return host, nil
 }
 
-func connectToPeer(addr string) error {
+//GetHostAddr gives array of strings
+
+func GetHostAddr() []string {
+	return []string{hostVar.Addrs()[0].String() + "/p2p/" + hostVar.ID().String(),
+		hostVar.Addrs()[1].String() + "/p2p/" + hostVar.ID().String()}
+}
+
+func ConnectToPeer(addr string) error {
 
 	peerMA, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
@@ -69,6 +86,7 @@ func connectToPeer(addr string) error {
 	}
 
 	fmt.Println("Connected to", peerAddrInfo.String())
+	SendPingToPeer(peerAddrInfo.ID)
 	return nil
 }
 
@@ -127,26 +145,40 @@ func streamHandler(s network.Stream) {
 
 	senderID := s.Conn().RemotePeer()
 
-	err := rlp.DecodeData(msg.Data, &decodedData)
-	if err != nil {
-		fmt.Println("Error decoding data:", err)
-		return
-	}
-
 	switch msg.ID {
 	case 0:
+		err := r.DecodeData(msg.Data, &decodedData)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
 		fmt.Println("Received PING: ", string(decodedData))
 		if string(decodedData) == "PING" {
 			sendPongToPeer(senderID)
 		}
 
 	case 1:
+		err := r.DecodeData(msg.Data, &decodedData)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
 		fmt.Println("Received PONG:", string(decodedData))
 
 	case 2:
+		err := r.DecodeData(msg.Data, &decodedData)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
 		Address(string(decodedData))
 
 	case 3:
+		err := r.DecodeData(msg.Data, &decodedData)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
 		ReceiveAddress(string(decodedData))
 
 	case 4:
@@ -154,20 +186,90 @@ func streamHandler(s network.Stream) {
 
 	case 5:
 		block := t.Block{}
-		err := rlp.DecodeData(decodedData, &block)
+		err := r.DecodeData(decodedData, &block)
 		if err != nil {
 			fmt.Println("Error decoding data:", err)
 			return
 		}
-		ReceiveBlock(block)
+		receiveBlock(block)
+
+	case 10:
+		handleVoteMessage(msg.Data)
 
 	default:
 		fmt.Println("ERR", msg)
 	}
 }
 
+func handleVoteMessage(data []byte) {
+	var voteData []uint64 // Change to slice
+
+	err := r.DecodeData(data, &voteData)
+	if err != nil {
+		fmt.Println("Error decoding vote data:", err)
+		return
+	}
+
+	// Ensure the vote data has at least two elements
+	if len(voteData) < 2 {
+		fmt.Println("Invalid vote data format")
+		return
+	}
+
+	blockNumber := voteData[0]
+	voteValue := uint8(voteData[1])
+
+	fmt.Printf("Received vote for block %d: %d\n", blockNumber, voteValue)
+
+	// Check if a vote has already been received for the block
+	if _, ok := blockVotes[blockNumber]; !ok {
+		// Create a new vote object if no vote has been received
+		blockVotes[blockNumber] = &vote{blockNumber: blockNumber}
+	}
+
+	// Increment the vote count based on the vote value
+	if voteValue == 1 {
+		blockVotes[blockNumber].yesVotes++
+	} else {
+		blockVotes[blockNumber].noVotes++
+	}
+
+	println("block 1 votes", blockVotes[1].yesVotes, blockVotes[1].noVotes)
+
+	// Check if the block has received enough votes
+	if blockVotes[blockNumber].yesVotes >= VoteThreshold {
+		commitBlock(blockNumber)
+	} else if blockVotes[blockNumber].noVotes >= VoteThreshold {
+		discardBlock(blockNumber)
+	}
+}
+
+// Function to commit the block to the database
+func commitBlock(blockNumber uint64) {
+	// Implement logic to commit the block to the database
+	fmt.Printf("Block %d committed to the database\n", blockNumber)
+}
+
+// Function to discard the block
+func discardBlock(blockNumber uint64) {
+	// Implement logic to discard the block
+	fmt.Printf("Block %d discarded\n", blockNumber)
+}
+
+// Function to send a vote message for a block
+func SendVote(blockNumber uint64, vote uint8) {
+
+	data, err := r.EncodeData([2]uint64{blockNumber, uint64(vote)}, false)
+	if err != nil {
+		fmt.Println("Error encoding vote data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 10, Code: 0, Want: 0, Data: data})
+	println("Sent Vote for block number = ", blockNumber, " Vote = ", vote)
+}
+
 func SendBlock(block t.Block) {
-	data, err := rlp.EncodeData(block, true)
+	data, err := r.EncodeData(block, true)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
@@ -175,14 +277,19 @@ func SendBlock(block t.Block) {
 	sendToAllPeers(message{ID: 5, Code: 0, Want: 0, Data: data})
 }
 
-func ReceiveBlock(block t.Block) {
-	fmt.Println("Received Block: ", block)
+func receiveBlock(block t.Block) {
+	fmt.Println("Received Block number = ", block.Header.Number)
+	if validator.ValidateBlock(&block) {
+		SendVote(block.Header.Number, 1)
+	} else {
+		SendVote(block.Header.Number, 0)
+	}
 }
 
 func Address(receivedAddress string) {
 	// PeerAddrs = append(PeerAddrs, receivedAddress)
 	fmt.Println("Address Received: ", receivedAddress)
-	data, err := rlp.EncodeData(hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String(), false)
+	data, err := r.EncodeData(hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String(), false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
@@ -191,7 +298,7 @@ func Address(receivedAddress string) {
 }
 
 func SendAddress(addr string) {
-	data, err := rlp.EncodeData(addr, false)
+	data, err := r.EncodeData(addr, false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
@@ -203,8 +310,8 @@ func ReceiveAddress(addr string) {
 	fmt.Println("address Received: ", addr)
 }
 
-func sendPing() {
-	data, err := rlp.EncodeData("PING", false)
+func SendPing() {
+	data, err := r.EncodeData("PING", false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
@@ -212,9 +319,31 @@ func sendPing() {
 	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: data})
 }
 
+func SendPingToPeer(peerID peer.ID) {
+	data, err := r.EncodeData("PING", false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+
+	// Create a new stream to the peer
+	s, err := hostVar.NewStream(CtxVar, peerID, "/")
+	if err != nil {
+		fmt.Println("Error creating stream:", err)
+		return
+	}
+	defer s.Close() // Close the stream when done
+
+	// Send PING message
+	encoder := json.NewEncoder(s)
+	if err := encoder.Encode(message{ID: 0, Code: 0, Want: 0, Data: data}); err != nil {
+		fmt.Println("Error encoding message:", err)
+	}
+}
+
 func sendPongToPeer(peerID peer.ID) {
 
-	data, err := rlp.EncodeData("PONG", false)
+	data, err := r.EncodeData("PONG", false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
@@ -244,11 +373,18 @@ type message struct {
 
 func Run() {
 	var err error
+	blockVotes = make(map[uint64]*vote)
 	hostVar, err = setupHost()
+	hostVar.SetStreamHandler("/", streamHandler)
 	if err != nil {
 		panic(err)
 	}
 	defer hostVar.Close()
+
+	go func() {
+		Rpc()
+	}()
+	GetAllAddrsFromRoot()
 
 	fmt.Println("Addresses:", hostVar.Addrs())
 	// fmt.Println("ID:", hostVar.ID())
@@ -260,16 +396,14 @@ func Run() {
 			println("Skipping self address")
 			continue
 		}
-		if err := connectToPeer(addr); err != nil {
+		if err := ConnectToPeer(addr); err != nil {
 			fmt.Println("Error connecting to peer:", err)
 			continue
 		}
 		fmt.Println("Connected to peer:", addr)
 	}
-
-	sendPing()
-
-	hostVar.SetStreamHandler("/", streamHandler)
+	// SendVote(1, 1)
+	SendPing()
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)

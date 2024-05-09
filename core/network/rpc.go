@@ -2,10 +2,108 @@ package network
 
 import (
 	// "encoding/json"
+
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
 )
+
+var (
+	PORT = "3001" // Port number for the RPC server
+)
+
+type PeerResponse struct {
+	PeerAddrs []string `json:"peerAddrs"`
+}
+
+func GetAllAddrsFromRoot() {
+	// Encode self string into JSON
+	requestBody, err := json.Marshal(hostVar.Addrs()[0].String() + "/p2p/" + hostVar.ID().String())
+	if err != nil {
+		fmt.Println("Error encoding self string:", err)
+		return
+	}
+	resp, err := http.Post("http://localhost:3000/getP2pAdr", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		fmt.Println("Error getting response:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("Error: Unexpected status code:", resp.StatusCode)
+		return
+	}
+
+	var peerResp PeerResponse
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return
+	}
+	if err := json.Unmarshal(body, &peerResp); err != nil {
+		fmt.Println("Error decoding JSON response:", err)
+		return
+	}
+
+	fmt.Println("Addresses:------------------------")
+	for _, addr := range peerResp.PeerAddrs {
+		fmt.Println(addr)
+		ConnectToPeer(addr)
+	}
+	println("------------------")
+}
+
+func getP2pAdr(w http.ResponseWriter, r *http.Request) {
+	var addr string
+	if err := json.NewDecoder(r.Body).Decode(&addr); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	PeerAddrs = append(PeerAddrs, addr)
+	PeerAddrs = removeDuplicates(PeerAddrs)
+
+	fmt.Println("Addresses:------------------------")
+	for _, addr := range PeerAddrs {
+		fmt.Println(addr)
+	}
+	println("------------------")
+
+	// Encode PeerAddrs to JSON
+	peerResp := PeerResponse{PeerAddrs: PeerAddrs}
+	peerAddrsJSON, err := json.Marshal(peerResp)
+	if err != nil {
+		http.Error(w, "Error encoding PeerAddrs to JSON", http.StatusInternalServerError)
+		return
+	}
+	// Write the JSON response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(peerAddrsJSON)
+	if err != nil {
+		fmt.Println("Error writing response:", err)
+	}
+}
+
+func removeDuplicates(strs []string) []string {
+	encountered := map[string]bool{}
+	result := []string{}
+
+	for _, str := range strs {
+		if str == "" {
+			continue
+		}
+		if !encountered[str] {
+			encountered[str] = true
+			result = append(result, str)
+		}
+	}
+
+	return result
+}
 
 func sendTx(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -98,6 +196,8 @@ func getBalance(w http.ResponseWriter, r *http.Request) {
 }
 
 func Rpc() {
+
+	http.HandleFunc("/getP2pAdr", getP2pAdr)
 	http.HandleFunc("/sendTx", sendTx)
 	http.HandleFunc("/blockNumber", blockNumber)
 	http.HandleFunc("/block", block)
@@ -105,9 +205,9 @@ func Rpc() {
 	http.HandleFunc("/getNonce", getNonce)
 	http.HandleFunc("/getBalance", getBalance)
 
-	err := http.ListenAndServe(":"+"3000", nil)
+	fmt.Println("RPC server listening on port", PORT)
+	err := http.ListenAndServe(":"+PORT, nil)
 	if err != nil {
-		fmt.Printf("Error starting server: %s\n", err)
-		os.Exit(1)
+		fmt.Println("Error starting RPC server:", err)
 	}
 }
