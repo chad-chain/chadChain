@@ -8,7 +8,7 @@ import (
 	rlp "github.com/malay44/chadChain/core/utils"
 )
 
-func BuildBlock(chn chan t.Block, transactionPool *t.TransactionPool, Miner [20]byte) (t.Block, error) {
+func BuildBlock(chn chan t.Block, transactionPool *t.TransactionPool, Miner string) (t.Block, error) {
 	log.Default().Println("Building Block Function")
 	timestamp := time.Now().Unix()
 	transactionroot, err := rlp.EncodeData(transactionPool.Get_all_transactions_and_clear(), false)
@@ -27,10 +27,12 @@ func BuildBlock(chn chan t.Block, transactionPool *t.TransactionPool, Miner [20]
 
 	transactionRootBytes := [32]byte{}
 	copy(transactionRootBytes[:], transactionroot)
-
+	miner, err := rlp.EncodeData(Miner, false)
+	minerBytes := [20]byte{}
+	copy(minerBytes[:], miner)
 	header := new(t.Header)
 	header.ParentHash = t.GetParentHash()
-	header.Miner = Miner
+	header.Miner = minerBytes
 	// header.StateRoot = [32]byte(t.StateRootHash)
 	header.TransactionsRoot = transactionRootBytes
 	header.Number = t.GetParentBlockHeight() + 1
@@ -47,7 +49,7 @@ func BuildBlock(chn chan t.Block, transactionPool *t.TransactionPool, Miner [20]
 		emptyBlock.Header.TransactionsRoot = [32]byte(t.GetParentBlockTransactionsRoot())
 		emptyBlock.Header.Number = t.GetParentBlockHeight() + 1
 		emptyBlock.Header.Timestamp = uint64(timestamp)
-		emptyBlock.Header.Miner = Miner
+		emptyBlock.Header.Miner = minerBytes
 		return *emptyBlock, err
 	}
 	chn <- minedBlock

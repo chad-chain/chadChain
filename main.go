@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	m "github.com/malay44/chadChain/core/mining"
@@ -25,8 +26,8 @@ func main() {
 	// }
 	n.PeerAddrs = []string{
 		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K",
-		"12D3KooWPot5PSrTg6K"}
+		"12D3KooWPot5PSrTg6",
+		"12D3KooWPot5PSrT6K"}
 
 	// n.CtxVar = context.Background()
 	// n.Run()
@@ -53,11 +54,12 @@ func main() {
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
 	log.Default().Println("Hello, world!")
-	miningInit()
+	expectedMiners := make(chan string, 10)
+	miningInit(expectedMiners)
 
 }
 
-func miningInit() {
+func miningInit(expectedMiner chan string) {
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)
@@ -71,10 +73,12 @@ func miningInit() {
 		select {
 		case miner := <-timerCh:
 			log.Default().Println("Miner selected", miner)
-			// var minerinByte [20]byte
-			// copy(minerinByte[:], []byte(miner))
+			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
+				go m.BuildBlock(chn, &transactionPool, miner)
+			}
+			log.Default().Println(miner)
+			expectedMiner <- miner // write in a global veriable
 
-			go m.BuildBlock(chn, &transactionPool, [20]byte{})
 		case blk := <-chn:
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
@@ -84,16 +88,17 @@ func miningInit() {
 
 func Timer(timerCh chan string, miners []string) {
 	// find miner inde
-	index := 1
+	index := 0
 	numberOfMiners := len(miners)
-	interval := 2 * numberOfMiners
 	time.Sleep(time.Duration(index) * time.Second)
 	timerCh <- miners[index]
+	index = (index + 1) % numberOfMiners
 
 	for {
-		log.Default().Println("Timer loop 2 sec")
-		time.Sleep(time.Duration(interval) * time.Second)
+		time.Sleep(time.Duration(2) * time.Second)
 		timerCh <- miners[index]
+		index = (index + 1) % numberOfMiners
+		log.Default().Println(miners[index])
 	}
 
 }
