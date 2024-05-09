@@ -9,6 +9,7 @@ import (
 
 	"github.com/chad-chain/chadChain/core/types"
 	"github.com/chad-chain/chadChain/core/utils"
+	"github.com/chad-chain/chadChain/core/validator"
 )
 
 var (
@@ -124,7 +125,17 @@ func sendTx(w http.ResponseWriter, r *http.Request) {
 	if err := utils.DecodeData(encodedTx, &signedTx); err != nil {
 		http.Error(w, "Error decoding RLP encoded transaction", http.StatusBadRequest)
 		return
+
 	}
+
+	//verify the transaction
+
+	if !validator.ValidateTransaction(&signedTx) {
+		fmt.Println("Transaction is invalid")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	var tnxArr []types.Transaction
 	tnxArr = append(tnxArr, signedTx)
 

@@ -192,6 +192,7 @@ func streamHandler(s network.Stream) {
 		}
 		print("Received Transaction: ")
 		transaction.Print()
+		ReceiveTransaction(transaction)
 
 	case 5:
 		block := t.Block{}
@@ -207,6 +208,14 @@ func streamHandler(s network.Stream) {
 
 	default:
 		fmt.Println("ERR", msg)
+	}
+}
+
+func ReceiveTransaction(tx t.Transaction) {
+	if validator.ValidateTransaction(&tx) {
+		t.TransactionPoolVar.AddTransactions([]t.Transaction{tx})
+	} else {
+		fmt.Println("Invalid Transaction")
 	}
 }
 
