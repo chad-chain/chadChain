@@ -132,7 +132,7 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	chn <- b
 }
 
-func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transactionpool as argument
+func MiningInit(expectedMiner chan string, peerAddrs []string) { // add transactionpool as argument
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)
@@ -148,8 +148,6 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transac
 			log.Default().Println("Miner selected", miner)
 
 			// write in a global veriable or in expectedMiner channel
-
-			log.Default().Println("Miner selected", miner)
 			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
 				go MineBlock(chn, &transactionPool)
 			}
@@ -160,18 +158,17 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transac
 	}
 }
 
-func Timer(timerCh chan string, miners *[]string) {
+func Timer(timerCh chan string, miners []string) {
 	log.Default().Println("Timer started")
+	index := len(miners) - 1
+	numberOfMiners := len(miners)
+	time.Sleep(time.Duration(0) * time.Second)
+	timerCh <- (miners)[index]
 
 	for {
-		// Outer loop to iterate over miners slice
-		for _, miner := range *miners {
-			timerCh <- miner
-		}
-
-		// Inner loop to run once and then update the number of miners
-		numberOfMiners := len(*miners)
-		println("Number of miners: ", numberOfMiners)
+		numberOfMiners = len(miners)         // Update the number of miners
+		index = (index + 1) % numberOfMiners // Calculate the index
+		timerCh <- (miners)[index]
 		time.Sleep(time.Duration(2) * time.Second)
 	}
 }
