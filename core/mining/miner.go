@@ -166,7 +166,10 @@ func Timer(timerCh chan string, miners *[]string) {
 	timerCh <- (*miners)[index]
 
 	for {
-		numberOfMiners = len(*miners)        // Update the number of miners
+		numberOfMiners = len(*miners) // Update the number of miners
+		if numberOfMiners < 2 {
+			continue
+		}
 		index = (index + 1) % numberOfMiners // Calculate the index
 		timerCh <- (*miners)[index]
 		time.Sleep(time.Duration(2) * time.Second)
