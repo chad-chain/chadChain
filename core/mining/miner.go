@@ -159,6 +159,12 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transac
 }
 
 func Timer(timerCh chan string, miners *[]string) {
+	for {
+		if len(*miners) > 2 {
+			break
+		}
+		print("Waiting for miners to join")
+	}
 	log.Default().Println("Timer started")
 	index := len(*miners) - 1
 	numberOfMiners := len(*miners)
