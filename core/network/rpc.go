@@ -25,7 +25,7 @@ func GetAllAddrsFromRoot() {
 		fmt.Println("Error encoding self string:", err)
 		return
 	}
-	resp, err := http.Post("http://64.227.149.14:3000/getP2pAdr", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://192.168.1.4:3000/getP2pAdr", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		fmt.Println("Error getting response:", err)
 		return
@@ -68,20 +68,14 @@ func getP2pAdr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if PeerAddrs exceeds 5, if not, add the new address
-	if len(PeerAddrs) < 5 {
-		PeerAddrs = append(PeerAddrs, addr)
-		fmt.Println("Addresses:------------------------")
-		for _, addr := range PeerAddrs {
-			fmt.Println(addr)
-		}
-		fmt.Println("------------------")
-	} else {
-		fmt.Println("PeerAddrs exceeds 5")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		return
+	PeerAddrs = append(PeerAddrs, addr)
+	PeerAddrs = removeDuplicates(PeerAddrs)
+
+	fmt.Println("Addresses:------------------------")
+	for _, addr := range PeerAddrs {
+		fmt.Println(addr)
 	}
+	println("------------------")
 
 	// Encode PeerAddrs to JSON
 	peerResp := PeerResponse{PeerAddrs: PeerAddrs}
