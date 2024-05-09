@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	m "github.com/malay44/chadChain/core/mining"
 )
 
 var (
@@ -48,12 +50,17 @@ func GetAllAddrsFromRoot() {
 		return
 	}
 
+	PeerAddrs = append(PeerAddrs, peerResp.PeerAddrs...)
+	PeerAddrs = removeDuplicates(PeerAddrs)
+
 	fmt.Println("Addresses:------------------------")
 	for _, addr := range peerResp.PeerAddrs {
 		fmt.Println(addr)
 		ConnectToPeer(addr)
 	}
 	println("------------------")
+	expectedMiners := make(chan string)
+	m.MiningInit(expectedMiners, PeerAddrs)
 }
 
 func getP2pAdr(w http.ResponseWriter, r *http.Request) {

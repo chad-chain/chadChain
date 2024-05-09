@@ -69,10 +69,9 @@ func main() {
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
 	select {}
-	// miningInit()
 	log.Default().Println("Hello, world!")
 	expectedMiners := make(chan string)
-	miningInit(expectedMiners)
+	MiningInit(expectedMiners)
 }
 
 func TestTransactionSig() {
@@ -148,7 +147,7 @@ func TestBlockSig() {
 
 }
 
-func miningInit(expectedMiner chan string) { // add transactionpool as argument
+func MiningInit(expectedMiner chan string) { // add transactionpool as argument
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)

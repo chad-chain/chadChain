@@ -2,6 +2,7 @@ package mining
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	cry "github.com/chad-chain/chadChain/core/crypto"
@@ -10,6 +11,10 @@ import (
 	rlp "github.com/chad-chain/chadChain/core/utils"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/crypto"
+)
+
+var (
+	expectedMiner chan string
 )
 
 func createEmptyBlock() t.Block {
@@ -125,4 +130,45 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	}
 	transactionPool.RemoveCommonTransactions(transactions)
 	chn <- b
+}
+
+func MiningInit(expectedMiner chan string, peerAddrs []string) { // add transactionpool as argument
+
+	// ch := make(chan t.Block)
+	chn := make(chan t.Block)
+	timerCh := make(chan string)
+
+	go Timer(timerCh, peerAddrs)
+	log.Default().Println("Both Chanells Created")
+
+	transactionPool := t.TransactionPool{} // temporary transaction pool
+	for {
+		select {
+		case miner := <-timerCh: // string value of miner
+			log.Default().Println("Miner selected", miner)
+
+			// write in a global veriable or in expectedMiner channel
+			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
+				go MineBlock(chn, &transactionPool)
+			}
+		case blk := <-chn: // getting mined block
+			log.Default().Println("Mined Block: ", blk)
+			log.Default().Println(blk)
+		}
+	}
+}
+
+func Timer(timerCh chan string, miners []string) {
+	log.Default().Println("Timer started")
+	index := len(miners) - 1
+	numberOfMiners := len(miners)
+	time.Sleep(time.Duration(0) * time.Second)
+	timerCh <- (miners)[index]
+
+	for {
+		numberOfMiners = len(miners)         // Update the number of miners
+		index = (index + 1) % numberOfMiners // Calculate the index
+		timerCh <- (miners)[index]
+		time.Sleep(time.Duration(2) * time.Second)
+	}
 }

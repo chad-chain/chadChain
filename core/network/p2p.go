@@ -387,12 +387,12 @@ func Run() {
 	go func() {
 		Rpc()
 	}()
-	GetAllAddrsFromRoot()
-
 	fmt.Println("Addresses:", hostVar.Addrs())
 	// fmt.Println("ID:", hostVar.ID())
 	fmt.Println("Concnated Addr:", hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String())
 	// fmt.Println("Peer_ADDR:", os.Getenv("PEER_ADDR"))
+
+	GetAllAddrsFromRoot()
 
 	for _, addr := range PeerAddrs {
 		if checkForSelf(addr) {
