@@ -72,6 +72,9 @@ func main() {
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
 
 	// miningInit()
+	log.Default().Println("Hello, world!")
+	expectedMiners := make(chan string)
+	miningInit(expectedMiners)
 	select {}
 }
 
@@ -145,13 +148,10 @@ func TestBlockSig() {
 	} else {
 		log.Default().Println("Block is invalid")
 	}
-	log.Default().Println("Hello, world!")
-	expectedMiners := make(chan string, 10)
-	miningInit(expectedMiners)
 
 }
 
-func miningInit(expectedMiner chan string) {
+func miningInit(expectedMiner chan string) { // add transactionpool as argument
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)
@@ -160,22 +160,18 @@ func miningInit(expectedMiner chan string) {
 	go Timer(timerCh, n.PeerAddrs)
 	log.Default().Println("Both Chanells Created")
 
-	transactionPool := t.TransactionPool{}
+	transactionPool := t.TransactionPool{} // temporary transaction pool
 	for {
 		select {
-		case miner := <-timerCh:
+		case miner := <-timerCh: // string value of miner
+			expectedMiner <- miner
+			// write in a global veriable
+
 			log.Default().Println("Miner selected", miner)
-			// var minerinByte [20]byte
-			// copy(minerinByte[:], []byte(miner))
-
-			go m.MineBlock(chn, &transactionPool)
 			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
-				// go m.BuildBlock(chn, &transactionPool, miner)
+				go m.MineBlock(chn, &transactionPool)
 			}
-			log.Default().Println(miner)
-			expectedMiner <- miner // write in a global veriable
-
-		case blk := <-chn:
+		case blk := <-chn: // getting mined block
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
 		}
@@ -183,10 +179,10 @@ func miningInit(expectedMiner chan string) {
 }
 
 func Timer(timerCh chan string, miners []string) {
-	// find miner inde
+	// find miner index
 	index := 0
 	numberOfMiners := len(miners)
-	time.Sleep(time.Duration(index) * time.Second)
+	time.Sleep(time.Duration(index) * time.Second) // set time according to last block miner
 	timerCh <- miners[index]
 	index = (index + 1) % numberOfMiners
 
@@ -196,7 +192,6 @@ func Timer(timerCh chan string, miners []string) {
 		index = (index + 1) % numberOfMiners
 		log.Default().Println(miners[index])
 	}
-
 }
 
 // func test(ch chan t.Block, chn chan t.Block) {
