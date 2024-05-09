@@ -9,14 +9,14 @@ import (
 	"strings"
 	"syscall"
 
+	t "github.com/chad-chain/chadChain/core/types"
+	r "github.com/chad-chain/chadChain/core/utils"
+	"github.com/chad-chain/chadChain/core/validator"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	t "github.com/malay44/chadChain/core/types"
-	r "github.com/malay44/chadChain/core/utils"
-	"github.com/malay44/chadChain/core/validator"
 	"github.com/multiformats/go-multiaddr"
 )
 

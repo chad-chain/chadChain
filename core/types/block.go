@@ -3,10 +3,10 @@ package types
 import (
 	"fmt"
 
+	db "github.com/chad-chain/chadChain/core/storage"
+	"github.com/chad-chain/chadChain/core/utils"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/crypto"
-	db "github.com/malay44/chadChain/core/storage"
-	"github.com/malay44/chadChain/core/utils"
 )
 
 type Block struct {

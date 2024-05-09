@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chad-chain/chadChain/core/crypto"
+	m "github.com/chad-chain/chadChain/core/mining"
+	n "github.com/chad-chain/chadChain/core/network"
+	db "github.com/chad-chain/chadChain/core/storage"
+	t "github.com/chad-chain/chadChain/core/types"
+	"github.com/chad-chain/chadChain/core/validator"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/malay44/chadChain/core/crypto"
-	m "github.com/malay44/chadChain/core/mining"
-	n "github.com/malay44/chadChain/core/network"
-	db "github.com/malay44/chadChain/core/storage"
-	t "github.com/malay44/chadChain/core/types"
-	"github.com/malay44/chadChain/core/validator"
 )
 
 func main() {

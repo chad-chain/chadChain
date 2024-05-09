@@ -3,8 +3,8 @@ package validator
 import (
 	"log"
 
-	"github.com/malay44/chadChain/core/crypto"
-	t "github.com/malay44/chadChain/core/types"
+	"github.com/chad-chain/chadChain/core/crypto"
+	t "github.com/chad-chain/chadChain/core/types"
 )
 
 func ValidateTransaction(tr *t.Transaction) bool {

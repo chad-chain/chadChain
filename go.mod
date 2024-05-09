@@ -1,4 +1,4 @@
-module github.com/malay44/chadChain
+module github.com/chad-chain/chadChain
 
 go 1.21
 

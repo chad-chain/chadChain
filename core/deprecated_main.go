@@ -5,7 +5,7 @@ import (
 	"log"
 	"math/big"
 
-	t "github.com/malay44/chadChain/core/types"
+	t "github.com/chad-chain/chadChain/core/types"
 )
 
 func _main() {

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
+	s "github.com/chad-chain/chadChain/core/storage"
+	rlp "github.com/chad-chain/chadChain/core/utils"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	s "github.com/malay44/chadChain/core/storage"
-	rlp "github.com/malay44/chadChain/core/utils"
 )
 
 type Account struct {

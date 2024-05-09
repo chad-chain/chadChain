@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
+	"github.com/chad-chain/chadChain/core/crypto"
+	db "github.com/chad-chain/chadChain/core/storage"
+	t "github.com/chad-chain/chadChain/core/types"
 	"github.com/joho/godotenv"
-	"github.com/malay44/chadChain/core/crypto"
-	db "github.com/malay44/chadChain/core/storage"
-	t "github.com/malay44/chadChain/core/types"
 )
 
 func GlobalDBVar() {

@@ -10,10 +10,10 @@ import (
 	"math/big"
 	"sync"
 
+	t "github.com/chad-chain/chadChain/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	t "github.com/malay44/chadChain/core/types"
 	"golang.org/x/crypto/sha3"
 )
 
