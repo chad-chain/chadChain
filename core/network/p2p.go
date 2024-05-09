@@ -216,7 +216,7 @@ func SendTransaction(tx t.Transaction) {
 		fmt.Println("Error encoding data:", err)
 		return
 	}
-	sendToAllPeers(message{ID: 6, Code: 0, Want: 0, Data: data})
+	sendToAllPeers(message{ID: 4, Code: 0, Want: 0, Data: data})
 }
 
 func handleVoteMessage(data []byte) {
