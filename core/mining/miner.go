@@ -2,6 +2,7 @@ package mining
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
@@ -10,6 +11,10 @@ import (
 	"github.com/malay44/chadChain/core/storage"
 	t "github.com/malay44/chadChain/core/types"
 	rlp "github.com/malay44/chadChain/core/utils"
+)
+
+var (
+	expectedMiner chan string
 )
 
 func createEmptyBlock() t.Block {
@@ -125,4 +130,48 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	}
 	transactionPool.RemoveCommonTransactions(transactions)
 	chn <- b
+}
+
+func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transactionpool as argument
+
+	// ch := make(chan t.Block)
+	chn := make(chan t.Block)
+	timerCh := make(chan string)
+
+	go Timer(timerCh, peerAddrs)
+	log.Default().Println("Both Chanells Created")
+
+	transactionPool := t.TransactionPool{} // temporary transaction pool
+	for {
+		select {
+		case miner := <-timerCh: // string value of miner
+			log.Default().Println("Miner selected", miner)
+
+			// write in a global veriable or in expectedMiner channel
+
+			log.Default().Println("Miner selected", miner)
+			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
+				go MineBlock(chn, &transactionPool)
+			}
+		case blk := <-chn: // getting mined block
+			log.Default().Println("Mined Block: ", blk)
+			log.Default().Println(blk)
+		}
+	}
+}
+
+func Timer(timerCh chan string, miners *[]string) {
+	log.Default().Println("Timer started")
+
+	for {
+		// Outer loop to iterate over miners slice
+		for _, miner := range *miners {
+			timerCh <- miner
+		}
+
+		// Inner loop to run once and then update the number of miners
+		numberOfMiners := len(*miners)
+		println("Number of miners: ", numberOfMiners)
+		time.Sleep(time.Duration(2) * time.Second)
+	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	m "github.com/malay44/chadChain/core/mining"
 	t "github.com/malay44/chadChain/core/types"
 	r "github.com/malay44/chadChain/core/utils"
 	"github.com/malay44/chadChain/core/validator"
@@ -406,6 +407,8 @@ func Run() {
 		fmt.Println("Connected to peer:", addr)
 	}
 	// SendVote(1, 1)
+	expectedMiners := make(chan string)
+	m.MiningInit(expectedMiners, &PeerAddrs)
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)
