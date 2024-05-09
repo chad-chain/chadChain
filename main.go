@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"strings"
 	"time"
@@ -16,13 +15,13 @@ import (
 )
 
 func main() {
-	n.CtxVar = context.Background()
+	// n.CtxVar = context.Background()
 	// n.PeerAddrs = []string{
 	// 	// "/ip4/127.0.0.1/tcp/63795/p2p/12D3KooWBMNwiqwM1DhRXDaTXU2CYCdpKMDY5tNxfviq7ogFmFhW",
 	// }
-	go func() {
-		n.Run()
-	}()
+	// go func() {
+	// 	n.Run()
+	// }()
 	// go func() {
 	// 	n.Rpc()
 	// }()
@@ -164,8 +163,9 @@ func miningInit(expectedMiner chan string) { // add transactionpool as argument
 	for {
 		select {
 		case miner := <-timerCh: // string value of miner
-			expectedMiner <- miner
-			// write in a global veriable
+			log.Default().Println("Miner selected", miner)
+
+			// write in a global veriable or in expectedMiner channel
 
 			log.Default().Println("Miner selected", miner)
 			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
@@ -180,9 +180,10 @@ func miningInit(expectedMiner chan string) { // add transactionpool as argument
 
 func Timer(timerCh chan string, miners []string) {
 	// find miner index
+	log.Default().Println("Timer started")
 	index := 0
 	numberOfMiners := len(miners)
-	time.Sleep(time.Duration(index) * time.Second) // set time according to last block miner
+	time.Sleep(time.Duration(0) * time.Second) // set time according to last block miner
 	timerCh <- miners[index]
 	index = (index + 1) % numberOfMiners
 

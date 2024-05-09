@@ -67,7 +67,9 @@ func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
 func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	log.Default().Println("Building Block Function")
 	transactions := transactionPool.Get_all_transactions_and_clear()
+	log.Default().Println("Transactions: ", transactions)
 	txn := storage.BadgerDB.NewTransaction(true)
+	log.Default().Println("txn: ", txn)
 	defer txn.Discard()
 
 	// Execute all the transactions in the transaction pool
