@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/ethereum/go-ethereum v1.14.0
+	github.com/joho/godotenv v1.5.1
 	github.com/libp2p/go-libp2p v0.33.2
 	github.com/multiformats/go-multiaddr v0.12.3
 	golang.org/x/crypto v0.22.0
@@ -42,7 +43,6 @@ require (
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/koron/go-ssdp v0.0.4 // indirect
