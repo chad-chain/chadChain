@@ -185,7 +185,7 @@ func streamHandler(s network.Stream) {
 
 	case 4:
 		transaction := t.Transaction{}
-		err := r.DecodeData(decodedData, &transaction)
+		err := r.DecodeData(msg.Data, &transaction)
 		if err != nil {
 			fmt.Println("Error decoding data:", err)
 			return
@@ -211,7 +211,7 @@ func streamHandler(s network.Stream) {
 }
 
 func SendTransaction(tx t.Transaction) {
-	data, err := r.EncodeData(tx, true)
+	data, err := r.EncodeData(tx, false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
