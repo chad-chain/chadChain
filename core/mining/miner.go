@@ -167,7 +167,7 @@ func Timer(timerCh chan string, miners *[]string) {
 
 	for {
 		numberOfMiners = len(*miners) // Update the number of miners
-		if numberOfMiners < 4 {
+		if numberOfMiners < 3 {
 			continue
 		}
 		index = (index + 1) % numberOfMiners // Calculate the index
