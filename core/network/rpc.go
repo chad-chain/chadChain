@@ -25,7 +25,7 @@ func GetAllAddrsFromRoot() {
 		fmt.Println("Error encoding self string:", err)
 		return
 	}
-	resp, err := http.Post("http://localhost:3000/getP2pAdr", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://64.227.149.14:3000/getP2pAdr", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		fmt.Println("Error getting response:", err)
 		return

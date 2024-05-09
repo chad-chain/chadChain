@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/libp2p/go-libp2p"
@@ -49,11 +50,15 @@ func setupHost() (host.Host, error) {
 	return host, nil
 }
 
-//GetHostAddr gives array of strings
-
 func GetHostAddr() []string {
-	return []string{hostVar.Addrs()[0].String() + "/p2p/" + hostVar.ID().String(),
+	addrs := []string{hostVar.Addrs()[0].String() + "/p2p/" + hostVar.ID().String(),
 		hostVar.Addrs()[1].String() + "/p2p/" + hostVar.ID().String()}
+	// Check if the first address is private, if not swap them
+	if strings.Contains(addrs[0], "127.0.0.1") {
+		return addrs
+	} else {
+		return []string{addrs[1], addrs[0]} // Swap the addresses
+	}
 }
 
 func ConnectToPeer(addr string) error {
