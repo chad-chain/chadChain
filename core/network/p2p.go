@@ -395,17 +395,17 @@ func Run() {
 
 	GetAllAddrsFromRoot()
 
-	for _, addr := range PeerAddrs {
-		if checkForSelf(addr) {
-			println("Skipping self address")
-			continue
-		}
-		if err := ConnectToPeer(addr); err != nil {
-			fmt.Println("Error connecting to peer:", err)
-			continue
-		}
-		fmt.Println("Connected to peer:", addr)
-	}
+	// for _, addr := range PeerAddrs {
+	// 	if checkForSelf(addr) {
+	// 		println("Skipping self address")
+	// 		continue
+	// 	}
+	// 	if err := ConnectToPeer(addr); err != nil {
+	// 		fmt.Println("Error connecting to peer:", err)
+	// 		continue
+	// 	}
+	// 	fmt.Println("Connected to peer:", addr)
+	// }
 	// SendVote(1, 1)
 	expectedMiners := make(chan string)
 	m.MiningInit(expectedMiners, &PeerAddrs)
