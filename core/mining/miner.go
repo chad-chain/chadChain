@@ -161,7 +161,7 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transac
 
 func Timer(timerCh chan string, miners *[]string) {
 	for {
-		if len(*miners) > 3 {
+		if len(*miners) > 2 {
 			break
 		}
 	}
