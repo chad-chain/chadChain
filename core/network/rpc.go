@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	m "github.com/chad-chain/chadChain/core/mining"
 )
 
 var (
@@ -59,8 +57,6 @@ func GetAllAddrsFromRoot() {
 		ConnectToPeer(addr)
 	}
 	println("------------------")
-	expectedMiners := make(chan string)
-	m.MiningInit(expectedMiners, PeerAddrs)
 }
 
 func getP2pAdr(w http.ResponseWriter, r *http.Request) {
