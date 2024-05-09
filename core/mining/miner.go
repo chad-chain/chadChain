@@ -159,6 +159,10 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transac
 }
 
 func Timer(timerCh chan string, miners *[]string) {
+	if len(*miners) < 3 {
+		log.Default().Println("Not enough miners to start the timer")
+		return
+	}
 	log.Default().Println("Timer started")
 	index := len(*miners) - 1
 	numberOfMiners := len(*miners)
@@ -166,10 +170,7 @@ func Timer(timerCh chan string, miners *[]string) {
 	timerCh <- (*miners)[index]
 
 	for {
-		numberOfMiners = len(*miners) // Update the number of miners
-		if numberOfMiners < 3 {
-			continue
-		}
+		numberOfMiners = len(*miners)        // Update the number of miners
 		index = (index + 1) % numberOfMiners // Calculate the index
 		timerCh <- (*miners)[index]
 		time.Sleep(time.Duration(2) * time.Second)
