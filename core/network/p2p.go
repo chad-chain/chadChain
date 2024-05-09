@@ -78,7 +78,7 @@ func ConnectToPeer(addr string) error {
 	}
 
 	fmt.Println("Connected to", peerAddrInfo.String())
-	SendPingToPeer(peerAddrInfo.ID)
+	SendPingToPeer(addr)
 	return nil
 }
 
@@ -89,6 +89,28 @@ func checkForSelf(addr string) bool {
 	return false
 }
 
+func CreateStreamToPeer(peerAddr string) (network.Stream, error) {
+	// Parse peer address string into a multiaddress
+	peerMA, err := multiaddr.NewMultiaddr(peerAddr)
+	if err != nil {
+		return nil, fmt.Errorf("error creating multiaddress: %v", err)
+	}
+
+	// Extract peer ID from multiaddress
+	peerAddrInfo, err := peer.AddrInfoFromP2pAddr(peerMA)
+	if err != nil {
+		return nil, fmt.Errorf("error creating peer.AddrInfo: %v", err)
+	}
+
+	// Create a new stream to the peer
+	s, err := hostVar.NewStream(CtxVar, peerAddrInfo.ID, "/")
+	if err != nil {
+		return nil, fmt.Errorf("error creating stream: %v", err)
+	}
+
+	return s, nil
+}
+
 func sendToAllPeers(msg message) {
 
 	for _, p := range PeerAddrs {
@@ -97,24 +119,11 @@ func sendToAllPeers(msg message) {
 			continue
 		}
 
-		peerMA, err := multiaddr.NewMultiaddr(p)
-		if err != nil {
-			fmt.Println("Error creating multiaddr:", err)
-			continue
-		}
-
-		peerAddrInfo, err := peer.AddrInfoFromP2pAddr(peerMA)
-		if err != nil {
-			fmt.Println("Error creating peer.AddrInfo:", err)
-			continue
-		}
-
-		s, err := hostVar.NewStream(CtxVar, peerAddrInfo.ID, "/")
+		s, err := CreateStreamToPeer(p)
 		if err != nil {
 			fmt.Println("Error creating stream:", err)
 			continue
 		}
-
 		send(s, msg)
 	}
 }
@@ -311,20 +320,20 @@ func SendPing() {
 	sendToAllPeers(message{ID: 0, Code: 0, Want: 0, Data: data})
 }
 
-func SendPingToPeer(peerID peer.ID) {
-	data, err := r.EncodeData("PING", false)
-	if err != nil {
-		fmt.Println("Error encoding data:", err)
-		return
-	}
-
-	// Create a new stream to the peer
-	s, err := hostVar.NewStream(CtxVar, peerID, "/")
+func SendPingToPeer(peerAddr string) {
+	// Create a stream to the peer
+	s, err := CreateStreamToPeer(peerAddr)
 	if err != nil {
 		fmt.Println("Error creating stream:", err)
 		return
 	}
 	defer s.Close() // Close the stream when done
+
+	data, err := r.EncodeData("PING", false)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
 
 	// Send PING message
 	encoder := json.NewEncoder(s)
@@ -397,7 +406,6 @@ func Run() {
 		fmt.Println("Connected to peer:", addr)
 	}
 	// SendVote(1, 1)
-	SendPing()
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)
