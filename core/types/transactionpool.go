@@ -10,6 +10,8 @@ type TransactionPool struct {
 	mutex        sync.Mutex
 }
 
+var TransactionPoolVar = NewTransactionPool()
+
 func NewTransactionPool() *TransactionPool {
 	return &TransactionPool{}
 }
@@ -86,4 +88,13 @@ func (tp *TransactionPool) RemoveCommonTransactions(transactions []Transaction) 
 	}
 	tp.ClearAndAddTransactions(updatedTransactions)
 	return tp
+}
+
+func (tp *TransactionPool) Print() {
+	tp.mutex.Lock()
+	defer tp.mutex.Unlock()
+	for i, t := range tp.Transactions {
+		println("Transaction", i)
+		t.Print()
+	}
 }

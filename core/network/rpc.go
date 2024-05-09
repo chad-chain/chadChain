@@ -1,13 +1,14 @@
 package network
 
 import (
-	// "encoding/json"
-
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/chad-chain/chadChain/core/types"
+	"github.com/chad-chain/chadChain/core/utils"
 )
 
 var (
@@ -111,14 +112,30 @@ func removeDuplicates(strs []string) []string {
 }
 
 func sendTx(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	var encodedTx []byte
+	err := json.NewDecoder(r.Body).Decode(&encodedTx)
+	if err != nil {
+		http.Error(w, "Error decoding transaction data", http.StatusBadRequest)
 		return
 	}
 
-	signed := r.URL.Query().Get("signed")
-	fmt.Println("Value of signed:", signed)
+	// Decode RLP encoded transaction
+	var signedTx types.Transaction
+	if err := utils.DecodeData(encodedTx, &signedTx); err != nil {
+		http.Error(w, "Error decoding RLP encoded transaction", http.StatusBadRequest)
+		return
+	}
+	var tnxArr []types.Transaction
+	tnxArr = append(tnxArr, signedTx)
 
+	// Send the transaction to the Transaction pool
+	types.TransactionPoolVar.AddTransactions(tnxArr)
+	types.TransactionPoolVar.Print()
+
+	// Send the transaction to the network
+	SendTransaction(signedTx)
+
+	// Respond with success
 	w.WriteHeader(http.StatusOK)
 }
 

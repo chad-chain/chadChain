@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"math/big"
 )
 
@@ -32,4 +33,14 @@ func (t *Transaction) SendTransaction(tr Transaction) {
 func (t *Transaction) AddTransaction(tr Transaction) {
 	// get transaction from network
 	// add to transaction pool
+}
+
+func (t *Transaction) Print() {
+	fmt.Println("Transaction:")
+	fmt.Println("To:", t.To)
+	fmt.Println("Value:", t.Value)
+	fmt.Println("Nonce:", t.Nonce)
+	fmt.Println("V:", t.V)
+	fmt.Println("R:", t.R)
+	fmt.Println("S:", t.S)
 }

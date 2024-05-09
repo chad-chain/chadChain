@@ -184,7 +184,14 @@ func streamHandler(s network.Stream) {
 		ReceiveAddress(string(decodedData))
 
 	case 4:
-		fmt.Println("Request (to which this response should be made): List of block numbers (upto 10 max) Response: Encoded version of a list of asked blocks")
+		transaction := t.Transaction{}
+		err := r.DecodeData(decodedData, &transaction)
+		if err != nil {
+			fmt.Println("Error decoding data:", err)
+			return
+		}
+		print("Received Transaction: ")
+		transaction.Print()
 
 	case 5:
 		block := t.Block{}
@@ -201,6 +208,15 @@ func streamHandler(s network.Stream) {
 	default:
 		fmt.Println("ERR", msg)
 	}
+}
+
+func SendTransaction(tx t.Transaction) {
+	data, err := r.EncodeData(tx, true)
+	if err != nil {
+		fmt.Println("Error encoding data:", err)
+		return
+	}
+	sendToAllPeers(message{ID: 6, Code: 0, Want: 0, Data: data})
 }
 
 func handleVoteMessage(data []byte) {
