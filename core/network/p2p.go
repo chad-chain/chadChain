@@ -35,19 +35,6 @@ type vote struct {
 var blockVotes map[uint64]*vote // Map to track votes for each block
 
 func setupHost() (host.Host, error) {
-	// Hex := os.Getenv("PRIV_HEX")
-
-	// // Decode hex string to bytes
-	// privBytes, err := hex.DecodeString(Hex)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// // Parse bytes into a private key
-	// privKey, err := crypto.UnmarshalEd25519PrivateKey(privBytes)
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, -1)
 	if err != nil {
@@ -91,7 +78,7 @@ func ConnectToPeer(addr string) error {
 }
 
 func checkForSelf(addr string) bool {
-	if addr == hostVar.Addrs()[1].String()+"/p2p/"+hostVar.ID().String() || addr == hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String() {
+	if addr == GetHostAddr()[0] || addr == GetHostAddr()[1] {
 		return true
 	}
 	return false
@@ -289,7 +276,7 @@ func receiveBlock(block t.Block) {
 func Address(receivedAddress string) {
 	// PeerAddrs = append(PeerAddrs, receivedAddress)
 	fmt.Println("Address Received: ", receivedAddress)
-	data, err := r.EncodeData(hostVar.Addrs()[0].String()+"/p2p/"+hostVar.ID().String(), false)
+	data, err := r.EncodeData(GetHostAddr()[1], false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return

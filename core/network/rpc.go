@@ -20,7 +20,7 @@ type PeerResponse struct {
 
 func GetAllAddrsFromRoot() {
 	// Encode self string into JSON
-	requestBody, err := json.Marshal(hostVar.Addrs()[0].String() + "/p2p/" + hostVar.ID().String())
+	requestBody, err := json.Marshal(GetHostAddr()[1])
 	if err != nil {
 		fmt.Println("Error encoding self string:", err)
 		return
