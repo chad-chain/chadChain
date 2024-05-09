@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	PORT = "3001" // Port number for the RPC server
+	PORT = "3000" // Port number for the RPC server
 )
 
 type PeerResponse struct {
