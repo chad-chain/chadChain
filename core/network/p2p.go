@@ -373,6 +373,8 @@ func Run() {
 	}
 	defer hostVar.Close()
 
+	PeerAddrs = append(PeerAddrs, GetHostAddr()[1])
+
 	go func() {
 		Rpc()
 	}()
