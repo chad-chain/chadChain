@@ -15,6 +15,7 @@ type Block struct {
 }
 
 var LatestBlock Block
+var LatestBlockHash [32]byte
 
 // add single transaction to block
 func (b *Block) AddTransactionToBlock(t Transaction) {
@@ -50,23 +51,24 @@ func (b *Block) AddBlockToChain() error {
 			return fmt.Errorf("error inserting block into db: %v", err)
 		}
 		// Update the latest block in the db
-		err = db.Update([]byte("latestBlock"), b)(txn)
+		err = db.Update([]byte("latestBlock"), *b)(txn)
 		if err != nil {
 			fmt.Printf("error updating latest block hash: %v", err)
 			if err == badger.ErrKeyNotFound {
-				err = db.Insert([]byte("stateRootHash"), hash)(txn)
+				err = db.Insert([]byte("latestBlock"), *b)(txn)
 				if err != nil {
 					return err
 				}
 			}
 			return err
 		}
+		LatestBlock = *b
+		copy(LatestBlockHash[:], hash)
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("error adding block to DB: %v", err)
 	}
-
 	return nil
 }
 
@@ -76,33 +78,4 @@ func CreateBlock(header *Header, transactions *[]Transaction) *Block {
 	block.Header = *header
 	block.Transactions = *transactions
 	return block
-}
-
-func GetParentBlock() Block {
-	// get parent block
-	return Block{}
-}
-
-// Get Parent Block Height
-func GetParentBlockHeight() uint64 {
-	// get parent block height
-	return 0
-}
-
-// Get ParentBlock StateRoot
-func GetParentBlockStateRoot() [32]byte {
-	// get parent block state root
-	return [32]byte{}
-}
-
-// Get ParentBlock TransactionsRoot
-func GetParentBlockTransactionsRoot() [32]byte {
-	// get parent block transactions root
-	return [32]byte{}
-}
-
-// Get ParentHash
-func GetParentHash() [32]byte {
-	// get parent hash
-	return [32]byte{}
 }

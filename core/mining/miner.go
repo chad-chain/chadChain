@@ -14,10 +14,10 @@ import (
 
 func createEmptyBlock() t.Block {
 	emptyBlock := new(t.Block)
-	emptyBlock.Header.ParentHash = t.GetParentHash()
+	emptyBlock.Header.ParentHash = t.LatestBlockHash
 	emptyBlock.Header.StateRoot = [32]byte(t.StateRootHash)
-	emptyBlock.Header.TransactionsRoot = [32]byte(t.GetParentBlockTransactionsRoot())
-	emptyBlock.Header.Number = t.GetParentBlockHeight() + 1
+	emptyBlock.Header.TransactionsRoot = [32]byte(t.LatestBlock.Header.TransactionsRoot)
+	emptyBlock.Header.Number = t.LatestBlock.Header.Number + 1
 	emptyBlock.Header.Timestamp = uint64(time.Now().Unix())
 	return *emptyBlock
 }
@@ -66,7 +66,7 @@ func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
 // spin up a go routine to call this function
 func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	log.Default().Println("Building Block Function")
-	transactions := transactionPool.Get_all_transactions_and_clear()
+	transactions := transactionPool.Get_all_transactions()
 	log.Default().Println("Transactions: ", transactions)
 	txn := storage.BadgerDB.NewTransaction(true)
 	log.Default().Println("txn: ", txn)
@@ -97,7 +97,7 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	}
 
 	header := t.Header{
-		ParentHash:       t.GetParentHash(),
+		ParentHash:       t.LatestBlockHash,
 		Miner:            cry.MinerAddress,
 		StateRoot:        [32]byte(t.StateRootHash),
 		TransactionsRoot: [32]byte(crypto.Keccak256(transactionRLP)),
@@ -123,5 +123,6 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 		chn <- createEmptyBlock()
 		log.Fatalln("Error committing transaction: ", err)
 	}
+	transactionPool.RemoveCommonTransactions(transactions)
 	chn <- b
 }
