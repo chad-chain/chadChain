@@ -8,6 +8,7 @@ import (
 	"github.com/chad-chain/chadChain/core/crypto"
 	db "github.com/chad-chain/chadChain/core/storage"
 	t "github.com/chad-chain/chadChain/core/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/joho/godotenv"
 )
 
@@ -49,9 +50,15 @@ func Keys() {
 		// load the private
 	} else {
 		crypto.PrivateKeyHex = os.Getenv("PRIV_HEX")
+		FaucetPrivateKeyHex := os.Getenv("FAUCET_PRIV_HEX")
 		_, err := crypto.LoadPrivateKeyAndAddr(crypto.PrivateKeyHex)
 		if err != nil {
 			log.Fatalln("Failed to load private key")
+			return
+		}
+		_, err = crypto.LoadFaucetPrivateKeyAndAddr(FaucetPrivateKeyHex)
+		if err != nil {
+			log.Fatalln("Failed to load faucet private key")
 			return
 		}
 		log.Default().Println("Private key and Address loaded")
@@ -59,5 +66,18 @@ func Keys() {
 		fmt.Println("Private key: ", crypto.PrivateKeyHex)
 		fmt.Println("Wallet Address: ", crypto.MinerAddress.Hex())
 		fmt.Println("---------------------------------------------------------------------------------------------------")
+	}
+}
+
+func InitFaucet() {
+	acc := t.Account{
+		Address: common.Address(crypto.HexStringToBytes(os.Getenv("FAUCET_WALLET_ADDR"))),
+		Nonce:   0,
+		Balance: 100,
+	}
+	err := db.BadgerDB.Update(db.Insert([]byte(acc.Address.Hex()), acc))
+	if err != nil {
+		log.Default().Println("Failed to initialize faucet account")
+		log.Fatal(err)
 	}
 }

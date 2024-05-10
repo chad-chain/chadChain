@@ -27,6 +27,7 @@ func main() {
 	defer db.BadgerDB.Close()
 	initialize.GlobalDBVar()
 	initialize.Keys()
+	initialize.InitFaucet()
 
 	// err := godotenv.Load(".env")
 	// if err != nil {
@@ -86,7 +87,7 @@ func TestTransactionSig() {
 
 	log.Default().Println("Account Address:", accAddr)
 
-	signedTx, err := crypto.SignTransaction(&transaction)
+	signedTx, err := crypto.SignTransaction(&transaction, privateKey)
 
 	if err != nil {
 		log.Default().Println("Failed to sign transaction:", err)

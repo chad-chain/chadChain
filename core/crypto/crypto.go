@@ -20,6 +20,7 @@ import (
 var PrivateKey *ecdsa.PrivateKey
 var PrivateKeyHex string
 var MinerAddress common.Address
+var FaucetPrivateKey *ecdsa.PrivateKey
 
 func GenerateNewPrivateKey() (*ecdsa.PrivateKey, string, common.Address, error) {
 	privateKey, err := crypto.GenerateKey()
@@ -45,9 +46,18 @@ func LoadPrivateKeyAndAddr(privateKeyHex string) (*ecdsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func SignTransaction(tx *t.UnSignedTx) (t.Transaction, error) {
+func LoadFaucetPrivateKeyAndAddr(privateKeyHex string) (*ecdsa.PrivateKey, error) {
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		return nil, err
+	}
+	FaucetPrivateKey = privateKey
+	return privateKey, nil
+}
+
+func SignTransaction(tx *t.UnSignedTx, privateKey *ecdsa.PrivateKey) (t.Transaction, error) {
 	h := Hash(tx)
-	sig, err := crypto.Sign(h[:], PrivateKey)
+	sig, err := crypto.Sign(h[:], privateKey)
 	if err != nil {
 		return t.Transaction{}, err
 	}
