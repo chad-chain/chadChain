@@ -1,6 +1,7 @@
 package mining
 
 import (
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -36,6 +37,7 @@ func createEmptyBlock() t.Block {
 }
 
 func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
+	fmt.Println("Executing Transaction")
 	senderAddress, err := cry.VerifyTxSign(transaction)
 	if err != nil {
 		return err
@@ -63,6 +65,9 @@ func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
 
 	senderAccount.Balance -= transaction.Value
 	receiverAccount.Balance += transaction.Value
+
+	log.Default().Println("Sender Account Balance: ", senderAccount.Balance)
+	log.Default().Println("Receiver Account Balance: ", receiverAccount.Balance)
 
 	// This is done to maintain the atomicity of the transaction
 	// If any of the updates fail, the transaction will be rolled back
@@ -93,22 +98,21 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	log.Default().Println("Building Block Function")
 	transactions := transactionPool.Get_all_transactions()
 	log.Default().Println("Mining Block with transactions:")
+	txn := storage.BadgerDB.NewTransaction(true)
+	defer txn.Discard()
+
+	// Execute all the transactions in the transaction pool
 	for i, tx := range transactions {
 		log.Default().Println("Transaction ", i, " : ")
 		log.Default().Println("Transaction:")
 		log.Default().Println("To:", tx.To.Hex())
 		log.Default().Println("Value:", tx.Value)
 		log.Default().Println("Nonce:", tx.Nonce)
-	}
-	txn := storage.BadgerDB.NewTransaction(true)
-	defer txn.Discard()
-
-	// Execute all the transactions in the transaction pool
-	for _, tx := range transactions {
 		err := ExecuteTransaction(&tx, txn)
 		if err != nil {
 			txn.Discard()
 			chn <- createEmptyBlock()
+			log.Default().Println("Error executing transaction: ", err)
 			log.Fatalln("Error executing transaction: ", err)
 		}
 	}

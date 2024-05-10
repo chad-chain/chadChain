@@ -11,6 +11,7 @@ import (
 	"github.com/chad-chain/chadChain/core/types"
 	"github.com/chad-chain/chadChain/core/utils"
 	"github.com/chad-chain/chadChain/core/validator"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -28,7 +29,7 @@ func GetAllAddrsFromRoot() {
 		fmt.Println("Error encoding self string:", err)
 		return
 	}
-	resp, err := http.Post("http://192.168.1.4:3000/getP2pAdr", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://10.1.45.100:3000/getP2pAdr", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		fmt.Println("Error getting response:", err)
 		return
@@ -157,7 +158,6 @@ func sendTx(w http.ResponseWriter, r *http.Request) {
 // /tx?hash={hash}: Given the transaction hash, returns the contents of a transaction (without the v, r, s values) else nil (Response type: json struct of block type described above)
 // /getNonce?address={address}: Given the address, returns the current nonce of that account
 // /getBalance?address={address}: Given the address, returns the current balance/amount of that account
-
 func blockNumber(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -242,6 +242,32 @@ func getBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	address := r.URL.Query().Get("address")
 	fmt.Println("Value of address:", address)
+
+	// Convert address to [20]byte
+	var toAddress [20]byte
+	copy(toAddress[:], crypto.HexStringToBytes(address))
+
+	// Get the balance of the address
+	account, err := types.GetAccount(toAddress)
+	if err != nil {
+		http.Error(w, "Error getting account", http.StatusInternalServerError)
+		return
+	}
+
+	// Encode the balance to JSON
+	balanceJSON, err := json.Marshal(account.Balance)
+	if err != nil {
+		http.Error(w, "Error encoding balance to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	// Write the JSON response
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(balanceJSON)
+	if err != nil {
+		fmt.Println("Error writing response:", err)
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -253,14 +279,12 @@ func faucet(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	fmt.Println("Value of address:", address)
 
-	// Convert address to [20]byte
-	var toAddress [20]byte
-	copy(toAddress[:], crypto.HexStringToBytes(address))
+	toAddress := common.HexToAddress(address)
 
 	// create a transaction
 	tr := types.UnSignedTx{
 		To:    toAddress,
-		Value: 10000,
+		Value: 2,
 		Nonce: 0,
 	}
 
@@ -280,6 +304,7 @@ func faucet(w http.ResponseWriter, r *http.Request) {
 	print("Sending faucet transaction to the network")
 
 	// Send the transaction to the network
+	SendTransaction(signedTx)
 
 	w.WriteHeader(http.StatusOK)
 }
