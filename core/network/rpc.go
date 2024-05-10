@@ -248,7 +248,7 @@ func faucet(w http.ResponseWriter, r *http.Request) {
 		Nonce: 0,
 	}
 
-	signedTx, err := crypto.SignTransaction(&tr, crypto.PrivateKey)
+	signedTx, err := crypto.SignTransaction(&tr, crypto.FaucetPrivateKey)
 	if err != nil {
 		http.Error(w, "Error signing transaction", http.StatusInternalServerError)
 		return
