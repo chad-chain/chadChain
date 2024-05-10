@@ -7,6 +7,7 @@ import (
 	"time"
 
 	cry "github.com/chad-chain/chadChain/core/crypto"
+	"github.com/chad-chain/chadChain/core/network"
 	"github.com/chad-chain/chadChain/core/storage"
 	t "github.com/chad-chain/chadChain/core/types"
 	rlp "github.com/chad-chain/chadChain/core/utils"
@@ -215,7 +216,7 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) 
 		case blk := <-chn: // getting mined block
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
-			// network.SendBlock(blk)
+			network.SendBlock(blk)
 			blk.PersistBlock()
 		}
 	}
@@ -223,7 +224,7 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) 
 
 func Timer(timerCh chan string, miners *[]string) {
 	for {
-		if len(*miners) > 2 {
+		if len(*miners) > 1 {
 			break
 		}
 	}

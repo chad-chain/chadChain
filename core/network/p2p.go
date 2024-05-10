@@ -260,8 +260,6 @@ func handleVoteMessage(data []byte) {
 		blockVotes[blockNumber].noVotes++
 	}
 
-	println("block 1 votes", blockVotes[1].yesVotes, blockVotes[1].noVotes)
-
 	// Check if the block has received enough votes
 	if blockVotes[blockNumber].yesVotes >= VoteThreshold {
 		commitBlock(blockNumber)
