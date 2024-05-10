@@ -7,6 +7,7 @@ import (
 	"time"
 
 	cry "github.com/chad-chain/chadChain/core/crypto"
+	"github.com/chad-chain/chadChain/core/network"
 	"github.com/chad-chain/chadChain/core/storage"
 	t "github.com/chad-chain/chadChain/core/types"
 	rlp "github.com/chad-chain/chadChain/core/utils"
@@ -86,7 +87,11 @@ func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
 func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	log.Default().Println("Building Block Function")
 	transactions := transactionPool.Get_all_transactions()
-	log.Default().Println("Transactions: ", transactions)
+	log.Default().Println("Mining Block with transactions:")
+	for i, tx := range transactions {
+		log.Default().Println("Transaction ", i, " : ")
+		tx.Print()
+	}
 	txn := storage.BadgerDB.NewTransaction(true)
 	log.Default().Println("txn: ", txn)
 	defer txn.Discard()
