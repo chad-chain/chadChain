@@ -24,7 +24,7 @@ var (
 	hostVar       host.Host
 	CtxVar        context.Context
 	PeerAddrs     []string
-	VoteThreshold = 2
+	VoteThreshold = 1
 )
 
 type vote struct {
