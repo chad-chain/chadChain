@@ -5,6 +5,8 @@ import (
 
 	"github.com/chad-chain/chadChain/core/crypto"
 	t "github.com/chad-chain/chadChain/core/types"
+	"github.com/chad-chain/chadChain/core/utils"
+	crypto2 "github.com/ethereum/go-ethereum/crypto"
 )
 
 func ValidateTransaction(tr *t.Transaction) bool {
@@ -30,10 +32,40 @@ func ValidateTransaction(tr *t.Transaction) bool {
 	return true
 }
 
-func ValidateBlock(b *t.Block) bool {
+func ValidateHeader(b *t.Block) bool {
 	if !crypto.VerifyHeader(b) {
 		log.Default().Println("Failed to verify header signature")
 		return false
+	}
+	return true
+}
+
+// function to verify the received block. It verifies the block header and the transactions
+func VerifyBlock(block *t.Block) bool {
+	// verify the header
+	if !crypto.VerifyHeader(block) {
+		log.Default().Println("Failed to verify header signature")
+		return false
+	}
+
+	// verify the transactions root
+	// encode the transactions
+	transactionRLP, err := utils.EncodeData(block.Transactions, false)
+	if err != nil {
+		log.Default().Println("Error encoding the transactions")
+		return false
+	}
+	if block.Header.TransactionsRoot != [32]byte(crypto2.Keccak256(transactionRLP)) {
+		log.Default().Println("Transactions root doesn't match")
+		return false
+	}
+
+	// validate all the transactions in the block
+	for _, tx := range block.Transactions {
+		if !ValidateTransaction(&tx) {
+			log.Default().Println("Invalid transaction")
+			return false
+		}
 	}
 	return true
 }

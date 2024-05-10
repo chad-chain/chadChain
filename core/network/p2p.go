@@ -297,7 +297,7 @@ func SendBlock(block t.Block) {
 
 func receiveBlock(block t.Block) {
 	fmt.Println("Received Block number = ", block.Header.Number)
-	if validator.ValidateBlock(&block) {
+	if validator.ValidateHeader(&block) {
 		SendVote(block.Header.Number, 1)
 	} else {
 		SendVote(block.Header.Number, 0)

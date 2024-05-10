@@ -36,8 +36,8 @@ func (b *Block) RemoveTransactionFromBlock(t Transaction) {
 	}
 }
 
-// Getting Validated Block from network
-func (b *Block) AddBlockToChain() error {
+// Add block to the database
+func (b *Block) PersistBlock() error {
 	marshalledHeader, err := utils.EncodeData(b.Header, false)
 	hash := crypto.Keccak256(marshalledHeader)
 

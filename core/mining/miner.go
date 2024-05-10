@@ -10,6 +10,7 @@ import (
 	"github.com/chad-chain/chadChain/core/storage"
 	t "github.com/chad-chain/chadChain/core/types"
 	rlp "github.com/chad-chain/chadChain/core/utils"
+	"github.com/chad-chain/chadChain/core/validator"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -131,6 +132,23 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	}
 	transactionPool.RemoveCommonTransactions(transactions)
 	chn <- b
+}
+
+// func to add block received from other miners to the blockchain
+func AddBlockToChain(block t.Block) {
+	// check if the block is valid
+	if !validator.VerifyBlock(&block) {
+		log.Default().Println("Block is invalid")
+		return
+	}
+
+	err := block.PersistBlock()
+	if err != nil {
+		log.Default().Println("Error persisting block: ", err)
+		return
+	} else {
+		log.Default().Println("Block added to chain")
+	}
 }
 
 func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transactionpool as argument
