@@ -1,7 +1,6 @@
 package mining
 
 import (
-	"expvar"
 	"log"
 	"sort"
 	"strings"
@@ -37,7 +36,19 @@ func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
 	}
 	receiverAccount, err := t.GetAccount(transaction.To)
 	if err != nil {
-		return err
+		if err == badger.ErrKeyNotFound {
+			receiverAccount = t.Account{
+				Address: transaction.To,
+				Nonce:   0,
+				Balance: 0,
+			}
+			_, _, err := receiverAccount.AddAccount()
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 	senderAccount, err := t.GetAccount(senderAddress)
 	if err != nil {
