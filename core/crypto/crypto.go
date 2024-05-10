@@ -86,7 +86,7 @@ func BytesToHexString(b []byte) string {
 func HexStringToBytes(s string) []byte {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		log.Fatal(err)
+		println("Error decoding hex string:", err)
 	}
 	return b
 }
