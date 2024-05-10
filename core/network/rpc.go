@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/chad-chain/chadChain/core/crypto"
 	"github.com/chad-chain/chadChain/core/types"
 	"github.com/chad-chain/chadChain/core/utils"
 	"github.com/chad-chain/chadChain/core/validator"
@@ -228,6 +229,45 @@ func getBalance(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func faucet(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("address") == "" {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	address := r.URL.Query().Get("address")
+	fmt.Println("Value of address:", address)
+
+	// Convert address to [20]byte
+	var toAddress [20]byte
+	copy(toAddress[:], crypto.HexStringToBytes(address))
+
+	// create a transaction
+	tr := types.UnSignedTx{
+		To:    toAddress,
+		Value: 10000,
+		Nonce: 0,
+	}
+
+	signedTx, err := crypto.SignTransaction(&tr)
+	if err != nil {
+		http.Error(w, "Error signing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	var tnxArr []types.Transaction
+	tnxArr = append(tnxArr, signedTx)
+
+	// Send the transaction to the Transaction pool
+	types.TransactionPoolVar.AddTransactions(tnxArr)
+	types.TransactionPoolVar.Print()
+
+	print("Sending faucet transaction to the network")
+
+	// Send the transaction to the network
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func Rpc() {
 
 	http.HandleFunc("/getP2pAdr", getP2pAdr)
@@ -237,6 +277,7 @@ func Rpc() {
 	http.HandleFunc("/tx", tx)
 	http.HandleFunc("/getNonce", getNonce)
 	http.HandleFunc("/getBalance", getBalance)
+	http.HandleFunc("/faucet", faucet)
 
 	fmt.Println("RPC server listening on port", PORT)
 	err := http.ListenAndServe(":"+PORT, nil)
