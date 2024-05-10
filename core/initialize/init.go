@@ -8,7 +8,6 @@ import (
 	"github.com/chad-chain/chadChain/core/crypto"
 	db "github.com/chad-chain/chadChain/core/storage"
 	t "github.com/chad-chain/chadChain/core/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/joho/godotenv"
 )
 
@@ -70,14 +69,17 @@ func Keys() {
 }
 
 func InitFaucet() {
+	var toAddress [20]byte
+	copy(toAddress[:], crypto.HexStringToBytes(os.Getenv("FAUCET_WALLET_ADDR")))
+	fmt.Println("Value of address:", toAddress)
 	acc := t.Account{
-		Address: common.Address(crypto.HexStringToBytes(os.Getenv("FAUCET_WALLET_ADDR"))),
+		Address: toAddress,
 		Nonce:   0,
 		Balance: 100,
 	}
-	err := db.BadgerDB.Update(db.Insert([]byte(acc.Address.Hex()), acc))
+	_, _, err := acc.AddAccount()
 	if err != nil {
 		log.Default().Println("Failed to initialize faucet account")
-		log.Fatal(err)
+		return
 	}
 }
