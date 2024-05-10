@@ -163,6 +163,22 @@ func blockNumber(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	latest := types.LatestBlock.Header.Number
+	fmt.Printf("Latest block number: %d\n", latest)
+
+	// Encode the block number to JSON
+	latestJSON, err := json.Marshal(latest)
+	if err != nil {
+		http.Error(w, "Error encoding block number to JSON", http.StatusInternalServerError)
+		return
+	}
+	// Write the JSON response
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(latestJSON)
+	if err != nil {
+		fmt.Println("Error writing response:", err)
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
