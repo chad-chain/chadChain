@@ -220,7 +220,7 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) 
 		case blk := <-chn: // getting mined block
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
-			// network.SendBlock(blk)
+			network.SendBlock(blk)
 			blk.PersistBlock()
 		}
 	}
@@ -228,7 +228,7 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) 
 
 func Timer(timerCh chan string, miners *[]string) {
 	for {
-		if len(*miners) > 2 {
+		if len(*miners) > 1 {
 			break
 		}
 	}
@@ -243,6 +243,6 @@ func Timer(timerCh chan string, miners *[]string) {
 		numberOfMiners = len(*miners)        // Update the number of miners
 		index = (index + 1) % numberOfMiners // Calculate the index
 		timerCh <- (*miners)[index]
-		time.Sleep(time.Duration(2) * time.Second)
+		time.Sleep(time.Duration(10) * time.Second)
 	}
 }
