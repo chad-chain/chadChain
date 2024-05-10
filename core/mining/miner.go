@@ -1,6 +1,7 @@
 package mining
 
 import (
+	"expvar"
 	"log"
 	"sort"
 	"strings"
@@ -141,8 +142,38 @@ func AddBlockToChain(block t.Block) {
 		log.Default().Println("Block is invalid")
 		return
 	}
+	txn := storage.BadgerDB.NewTransaction(true)
+	defer txn.Discard()
+	for _, tx := range block.Transactions {
+		err := ExecuteTransaction(&tx, txn)
+		if err != nil {
+			txn.Discard()
+			log.Default().Println("Error executing transaction: ", err)
+			return
+		}
+	}
+	err := t.ComputeAndSaveRootHash()
+	if err != nil {
+		txn.Discard()
+		log.Default().Println("Error computing and saving root hash: ", err)
+		return
+	}
+	if block.Header.StateRoot != [32]byte(t.StateRootHash) {
+		log.Default().Println("State root hash is not correct")
+		return
+	}
+	if block.Header.Number != t.LatestBlock.Header.Number+1 {
+		log.Default().Println("Block number is not correct")
+		return
+	}
+	err = txn.Commit()
+	if err != nil {
+		txn.Discard()
+		log.Default().Println("Error committing transaction: ", err)
+		return
+	}
 
-	err := block.PersistBlock()
+	err = block.PersistBlock()
 	if err != nil {
 		log.Default().Println("Error persisting block: ", err)
 		return
