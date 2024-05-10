@@ -72,6 +72,22 @@ func (b *Block) PersistBlock() error {
 	return nil
 }
 
+func GetBlockByHash(hash [32]byte) (*Block, error) {
+	var block Block
+	err := db.BadgerDB.View(func(txn *badger.Txn) error {
+		key := []byte("block" + string(hash[:]))
+		err := db.Get(key, &block)(txn)
+		if err != nil {
+			return fmt.Errorf("error getting block from db: %v", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &block, nil
+}
+
 // create block
 func CreateBlock(header *Header, transactions *[]Transaction) *Block {
 	block := new(Block)
