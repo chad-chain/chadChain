@@ -195,7 +195,7 @@ func streamHandler(s network.Stream) {
 
 	case 5:
 		block := t.Block{}
-		err := r.DecodeData(decodedData, &block)
+		err := r.DecodeData(msg.Data, &block)
 		if err != nil {
 			fmt.Println("Error decoding data:", err)
 			return
@@ -295,7 +295,7 @@ func SendVote(blockNumber uint64, vote uint8) {
 }
 
 func SendBlock(block t.Block) {
-	data, err := r.EncodeData(block, true)
+	data, err := r.EncodeData(block, false)
 	if err != nil {
 		fmt.Println("Error encoding data:", err)
 		return
@@ -305,7 +305,7 @@ func SendBlock(block t.Block) {
 
 func receiveBlock(block t.Block) {
 	fmt.Println("Received Block number = ", block.Header.Number)
-	if validator.ValidateHeader(&block) {
+	if validator.VerifyBlock(&block) {
 		SendVote(block.Header.Number, 1)
 	} else {
 		SendVote(block.Header.Number, 0)
