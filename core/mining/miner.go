@@ -66,8 +66,8 @@ func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
 	senderAccount.Balance -= transaction.Value
 	receiverAccount.Balance += transaction.Value
 
-	log.Default().Println("Sender Account Balance: ", senderAccount.Balance)
-	log.Default().Println("Receiver Account Balance: ", receiverAccount.Balance)
+	fmt.Println("Sender Account Balance: ", senderAccount.Balance)
+	fmt.Println("Receiver Account Balance: ", receiverAccount.Balance)
 
 	// This is done to maintain the atomicity of the transaction
 	// If any of the updates fail, the transaction will be rolled back
@@ -95,24 +95,24 @@ func ExecuteTransaction(transaction *t.Transaction, txn *badger.Txn) error {
 // Don't call this function directly from the main function
 // spin up a go routine to call this function
 func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
-	log.Default().Println("Building Block Function")
+	fmt.Println("Building Block Function")
 	transactions := transactionPool.Get_all_transactions()
-	log.Default().Println("Mining Block with transactions:")
+	fmt.Println("Mining Block with transactions:")
 	txn := storage.BadgerDB.NewTransaction(true)
 	defer txn.Discard()
 
 	// Execute all the transactions in the transaction pool
 	for i, tx := range transactions {
-		log.Default().Println("Transaction ", i, " : ")
-		log.Default().Println("Transaction:")
-		log.Default().Println("To:", tx.To.Hex())
-		log.Default().Println("Value:", tx.Value)
-		log.Default().Println("Nonce:", tx.Nonce)
+		fmt.Println("Transaction ", i, " : ")
+		fmt.Println("Transaction:")
+		fmt.Println("To:", tx.To.Hex())
+		fmt.Println("Value:", tx.Value)
+		fmt.Println("Nonce:", tx.Nonce)
 		err := ExecuteTransaction(&tx, txn)
 		if err != nil {
 			txn.Discard()
 			chn <- createEmptyBlock()
-			log.Default().Println("Error executing transaction: ", err)
+			fmt.Println("Error executing transaction: ", err)
 			log.Fatalln("Error executing transaction: ", err)
 		}
 	}
@@ -172,7 +172,7 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 func AddBlockToChain(block t.Block) {
 	// check if the block is valid
 	if !validator.VerifyBlock(&block) {
-		log.Default().Println("Block is invalid")
+		fmt.Println("Block is invalid")
 		return
 	}
 	txn := storage.BadgerDB.NewTransaction(true)
@@ -181,37 +181,37 @@ func AddBlockToChain(block t.Block) {
 		err := ExecuteTransaction(&tx, txn)
 		if err != nil {
 			txn.Discard()
-			log.Default().Println("Error executing transaction: ", err)
+			fmt.Println("Error executing transaction: ", err)
 			return
 		}
 	}
 	err := t.ComputeAndSaveRootHash()
 	if err != nil {
 		txn.Discard()
-		log.Default().Println("Error computing and saving root hash: ", err)
+		fmt.Println("Error computing and saving root hash: ", err)
 		return
 	}
 	if block.Header.StateRoot != [32]byte(t.StateRootHash) {
-		log.Default().Println("State root hash is not correct")
+		fmt.Println("State root hash is not correct")
 		return
 	}
 	if block.Header.Number != t.LatestBlock.Header.Number+1 {
-		log.Default().Println("Block number is not correct")
+		fmt.Println("Block number is not correct")
 		return
 	}
 	err = txn.Commit()
 	if err != nil {
 		txn.Discard()
-		log.Default().Println("Error committing transaction: ", err)
+		fmt.Println("Error committing transaction: ", err)
 		return
 	}
 
 	err = block.PersistBlock()
 	if err != nil {
-		log.Default().Println("Error persisting block: ", err)
+		fmt.Println("Error persisting block: ", err)
 		return
 	} else {
-		log.Default().Println("Block added to chain")
+		fmt.Println("Block added to chain")
 	}
 }
 
@@ -222,21 +222,21 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) 
 	timerCh := make(chan string)
 
 	go Timer(timerCh, peerAddrs)
-	log.Default().Println("Both Chanells Created")
+	fmt.Println("Both Chanells Created")
 
 	transactionPool := t.TransactionPool{} // temporary transaction pool
 	for {
 		select {
 		case miner := <-timerCh: // string value of miner
-			log.Default().Println("Miner selected", miner)
+			fmt.Println("Miner selected", miner)
 
 			// write in a global veriable or in expectedMiner channel
 			if strings.Compare(miner, selfAdr) == 0 {
 				go MineBlock(chn, &transactionPool)
 			}
 		case blk := <-chn: // getting mined block
-			log.Default().Println("Mined Block: ", blk)
-			log.Default().Println(blk)
+			fmt.Println("Mined Block: ")
+			blk.Print()
 			network.SendBlock(blk)
 			blk.PersistBlock()
 		}
@@ -250,7 +250,7 @@ func Timer(timerCh chan string, miners *[]string) {
 		}
 	}
 	sort.Strings(*miners)
-	log.Default().Println("Timer started")
+	fmt.Println("Timer started")
 	index := len(*miners) - 1
 	numberOfMiners := len(*miners)
 	time.Sleep(time.Duration(0) * time.Second)

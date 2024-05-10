@@ -95,3 +95,13 @@ func CreateBlock(header *Header, transactions *[]Transaction) *Block {
 	block.Transactions = *transactions
 	return block
 }
+
+func (b *Block) Print() {
+	fmt.Println("Block:")
+	b.Header.Print()
+	fmt.Println("Transactions:")
+	for i, transaction := range b.Transactions {
+		fmt.Printf("Transaction %d:\n", i)
+		transaction.Print()
+	}
+}

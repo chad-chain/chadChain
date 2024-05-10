@@ -1,6 +1,8 @@
 package types
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -32,4 +34,15 @@ func DecodeHeader(data []byte) (Header, error) {
 		return h, err
 	}
 	return h, nil
+}
+
+func (h *Header) Print() {
+	fmt.Println("Header:")
+	fmt.Println("Parent Hash: ", h.ParentHash)
+	fmt.Println("Miner: ", h.Miner)
+	fmt.Println("State Root: ", h.StateRoot)
+	fmt.Println("Transactions Root: ", h.TransactionsRoot)
+	fmt.Println("Number: ", h.Number)
+	fmt.Println("Timestamp: ", h.Timestamp)
+	fmt.Println("Extra Data: ", h.ExtraData)
 }
