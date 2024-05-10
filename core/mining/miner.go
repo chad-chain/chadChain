@@ -151,7 +151,7 @@ func AddBlockToChain(block t.Block) {
 	}
 }
 
-func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transactionpool as argument
+func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) { // add transactionpool as argument
 
 	// ch := make(chan t.Block)
 	chn := make(chan t.Block)
@@ -167,12 +167,13 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string) { // add transac
 			log.Default().Println("Miner selected", miner)
 
 			// write in a global veriable or in expectedMiner channel
-			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
+			if strings.Compare(miner, selfAdr) == 0 {
 				go MineBlock(chn, &transactionPool)
 			}
 		case blk := <-chn: // getting mined block
 			log.Default().Println("Mined Block: ", blk)
 			log.Default().Println(blk)
+			blk.PersistBlock()
 		}
 	}
 }

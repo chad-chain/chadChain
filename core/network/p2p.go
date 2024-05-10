@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	m "github.com/chad-chain/chadChain/core/mining"
 	t "github.com/chad-chain/chadChain/core/types"
 	r "github.com/chad-chain/chadChain/core/utils"
 	"github.com/chad-chain/chadChain/core/validator"
@@ -432,8 +431,8 @@ func Run() {
 	// 	fmt.Println("Connected to peer:", addr)
 	// }
 	// SendVote(1, 1)
-	expectedMiners := make(chan string)
-	m.MiningInit(expectedMiners, &PeerAddrs)
+	// expectedMiners := make(chan string)
+	// m.MiningInit(expectedMiners, &PeerAddrs, GetHostAddr()[1])
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGKILL, syscall.SIGINT)

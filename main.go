@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/chad-chain/chadChain/core/crypto"
+	"github.com/chad-chain/chadChain/core/initialize"
 	m "github.com/chad-chain/chadChain/core/mining"
 	n "github.com/chad-chain/chadChain/core/network"
 	db "github.com/chad-chain/chadChain/core/storage"
@@ -23,9 +23,10 @@ func main() {
 	go func() {
 		n.Run()
 	}()
-	// db.InitBadger()
-	// defer db.BadgerDB.Close()
-	// initialize.GlobalDBVar()
+	db.InitBadger()
+	defer db.BadgerDB.Close()
+	initialize.GlobalDBVar()
+	initialize.Keys()
 
 	// err := godotenv.Load(".env")
 	// if err != nil {
@@ -67,11 +68,8 @@ func main() {
 
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
-
-	select {}
-	log.Default().Println("Hello, world!")
 	expectedMiners := make(chan string)
-	MiningInit(expectedMiners)
+	m.MiningInit(expectedMiners, &n.PeerAddrs, n.GetHostAddr()[1])
 }
 
 func TestTransactionSig() {
@@ -139,57 +137,12 @@ func TestBlockSig() {
 
 	log.Default().Println("Signature:", sig)
 
-	if validator.ValidateBlock(&block) {
+	if validator.ValidateHeader(&block) {
 		log.Default().Println("Block is valid")
 	} else {
 		log.Default().Println("Block is invalid")
 	}
 
-}
-
-func MiningInit(expectedMiner chan string) { // add transactionpool as argument
-
-	// ch := make(chan t.Block)
-	chn := make(chan t.Block)
-	timerCh := make(chan string)
-
-	go Timer(timerCh, n.PeerAddrs)
-	log.Default().Println("Both Chanells Created")
-
-	transactionPool := t.TransactionPool{} // temporary transaction pool
-	for {
-		select {
-		case miner := <-timerCh: // string value of miner
-			log.Default().Println("Miner selected", miner)
-
-			// write in a global veriable or in expectedMiner channel
-
-			log.Default().Println("Miner selected", miner)
-			if strings.Compare(miner, "12D3KooWPot5PSrTg6K") == 0 {
-				go m.MineBlock(chn, &transactionPool)
-			}
-		case blk := <-chn: // getting mined block
-			log.Default().Println("Mined Block: ", blk)
-			log.Default().Println(blk)
-		}
-	}
-}
-
-func Timer(timerCh chan string, miners []string) {
-	// find miner index
-	log.Default().Println("Timer started")
-	index := 0
-	numberOfMiners := len(miners)
-	time.Sleep(time.Duration(0) * time.Second) // set time according to last block miner
-	timerCh <- miners[index]
-	index = (index + 1) % numberOfMiners
-
-	for {
-		time.Sleep(time.Duration(2) * time.Second)
-		timerCh <- miners[index]
-		index = (index + 1) % numberOfMiners
-		log.Default().Println(miners[index])
-	}
 }
 
 // func test(ch chan t.Block, chn chan t.Block) {
