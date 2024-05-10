@@ -68,6 +68,7 @@ func main() {
 
 	// retrievedBlock := t.Block{}
 	// err = db.BadgerDB.View(db.Get([]byte("block"), &retrievedBlock))
+	time.Sleep(5 * time.Second)
 	expectedMiners := make(chan string)
 	m.MiningInit(expectedMiners, &n.PeerAddrs, n.GetHostAddr()[1])
 }
