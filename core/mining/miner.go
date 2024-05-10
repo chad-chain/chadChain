@@ -224,7 +224,6 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) 
 	go Timer(timerCh, peerAddrs)
 	fmt.Println("Both Chanells Created")
 
-	transactionPool := t.TransactionPool{} // temporary transaction pool
 	for {
 		select {
 		case miner := <-timerCh: // string value of miner
@@ -232,7 +231,7 @@ func MiningInit(expectedMiner chan string, peerAddrs *[]string, selfAdr string) 
 
 			// write in a global veriable or in expectedMiner channel
 			if strings.Compare(miner, selfAdr) == 0 {
-				go MineBlock(chn, &transactionPool)
+				go MineBlock(chn, t.TransactionPoolVar)
 			}
 		case blk := <-chn: // getting mined block
 			fmt.Println("Mined Block: ")
