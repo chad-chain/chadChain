@@ -28,7 +28,7 @@ func (ac *Account) CreateAccount(address common.Address, nonce uint64, balance u
 func (ac *Account) AddAccount() (string, string, error) {
 
 	// create keys for account and its hash
-	addrSlice := ac.Address[:]
+	addrSlice := common.Address(ac.Address).Bytes()
 	accKey := "account" + string(addrSlice)
 	hashKey := "hash" + string(addrSlice)
 
@@ -80,7 +80,7 @@ func (ac *Account) AddAccount() (string, string, error) {
 
 func (ac *Account) UpdateAccount() (func(tx *badger.Txn) error, error) {
 	// create keys for account and its hash
-	addrSlice := ac.Address[:]
+	addrSlice := common.Address(ac.Address).Bytes()
 	accKey := "account" + string(addrSlice)
 	hashKey := "hash" + string(addrSlice)
 

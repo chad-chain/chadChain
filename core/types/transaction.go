@@ -1,7 +1,7 @@
 package types
 
 import (
-	"fmt"
+	"log"
 	"math/big"
 )
 
@@ -36,11 +36,11 @@ func (t *Transaction) AddTransaction(tr Transaction) {
 }
 
 func (t *Transaction) Print() {
-	fmt.Println("Transaction:")
-	fmt.Println("To:", t.To)
-	fmt.Println("Value:", t.Value)
-	fmt.Println("Nonce:", t.Nonce)
-	fmt.Println("V:", t.V)
-	fmt.Println("R:", t.R)
-	fmt.Println("S:", t.S)
+	log.Default().Println("Transaction:")
+	log.Default().Println("To:", t.To)
+	log.Default().Println("Value:", t.Value)
+	log.Default().Println("Nonce:", t.Nonce)
+	log.Default().Println("V:", t.V)
+	log.Default().Println("R:", t.R)
+	log.Default().Println("S:", t.S)
 }

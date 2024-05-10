@@ -27,6 +27,11 @@ func createEmptyBlock() t.Block {
 	emptyBlock.Header.TransactionsRoot = [32]byte(t.LatestBlock.Header.TransactionsRoot)
 	emptyBlock.Header.Number = t.LatestBlock.Header.Number + 1
 	emptyBlock.Header.Timestamp = uint64(time.Now().Unix())
+	sig, err := cry.SignHeader(&emptyBlock.Header)
+	if err != nil {
+		log.Fatalln("Failed to sign header: ", err)
+	}
+	emptyBlock.Header.ExtraData = sig
 	return *emptyBlock
 }
 
@@ -128,7 +133,13 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 		Number:           t.LatestBlock.Header.Number + 1,
 		Timestamp:        uint64(time.Now().Unix()),
 	}
-	cry.SignHeader(&header)
+	sig, err := cry.SignHeader(&header)
+	if err != nil {
+		txn.Discard()
+		chn <- createEmptyBlock()
+		log.Fatalln("Failed to sign header: ", err)
+	}
+	header.ExtraData = sig
 
 	b := t.Block{
 		Header:       header,
