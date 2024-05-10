@@ -95,10 +95,12 @@ func MineBlock(chn chan t.Block, transactionPool *t.TransactionPool) {
 	log.Default().Println("Mining Block with transactions:")
 	for i, tx := range transactions {
 		log.Default().Println("Transaction ", i, " : ")
-		tx.Print()
+		log.Default().Println("Transaction:")
+		log.Default().Println("To:", tx.To.Hex())
+		log.Default().Println("Value:", tx.Value)
+		log.Default().Println("Nonce:", tx.Nonce)
 	}
 	txn := storage.BadgerDB.NewTransaction(true)
-	log.Default().Println("txn: ", txn)
 	defer txn.Discard()
 
 	// Execute all the transactions in the transaction pool
